@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Filter, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EventCard } from "../../components/aether/event-card";
 import { Badge, Button, FilterTabs, SearchInput } from "../../components/aether/primitives";
 import { SiteFooter, SiteHeader } from "../../components/aether/site-header";
 import { useApp } from "../../lib/store";
+import { isPlaylistMatch } from "../../lib/mock-data";
 
 type SearchParams = {
   playlist?: string | undefined;
@@ -29,6 +30,13 @@ function EventsCatalogPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // Sync selected playlist if initialPlaylist search param changes
+  useEffect(() => {
+    if (initialPlaylist) {
+      setSelectedPlaylist(initialPlaylist);
+    }
+  }, [initialPlaylist]);
+
   const filteredEvents = events.filter((ev) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -40,7 +48,7 @@ function EventsCatalogPage() {
       if (!match) return false;
     }
 
-    if (selectedPlaylist !== "all" && ev.playlist !== selectedPlaylist) {
+    if (selectedPlaylist !== "all" && !isPlaylistMatch(ev.playlist, selectedPlaylist)) {
       return false;
     }
 
@@ -130,18 +138,22 @@ function EventsCatalogPage() {
             >
               Semua Playlist
             </button>
-            {playlists.map((pl) => (
-              <button
-                key={pl.id}
-                onClick={() => setSelectedPlaylist(pl.tag)}
-                className={`rounded-pill px-3.5 py-1.5 text-[12px] font-semibold transition-all ${selectedPlaylist === pl.tag
-                    ? "neu-btn-blue text-white shadow-sm"
-                    : "neu-badge-glass text-ink-secondary hover:text-accent"
+            {playlists.map((pl) => {
+              const isSelected = isPlaylistMatch(selectedPlaylist, pl.tag);
+              return (
+                <button
+                  key={pl.id}
+                  onClick={() => setSelectedPlaylist(isSelected ? "all" : pl.tag)}
+                  className={`rounded-pill px-3.5 py-1.5 text-[12px] font-semibold transition-all cursor-pointer ${
+                    isSelected
+                      ? "neu-btn-blue text-white shadow-sm"
+                      : "neu-badge-glass text-ink-secondary hover:text-accent"
                   }`}
-              >
-                {pl.tag}
-              </button>
-            ))}
+                >
+                  {pl.tag}
+                </button>
+              );
+            })}
 
             {hasActiveFilters && (
               <button

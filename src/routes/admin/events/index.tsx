@@ -1,14 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   Calendar,
   Clock,
+  Crown,
   Edit3,
   ExternalLink,
   Plus,
   QrCode,
+  RotateCcw,
   Search,
+  ShieldAlert,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,11 +28,12 @@ export const Route = createFileRoute("/admin/events/")({
 });
 
 function AdminEventsPage() {
-  const { events, deleteEvent } = useApp();
+  const { events, deleteEvent, deleteAllEvents, resetAllEvents, isSuperAdmin } = useApp();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [liveQrEvent, setLiveQrEvent] = useState<EventItem | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const filtered = events.filter((ev) => {
     if (statusFilter !== "all" && ev.status !== statusFilter) return false;
@@ -57,12 +63,46 @@ function AdminEventsPage() {
         title="Manajemen Event"
         description="Kelola jadwal webinar, harga tiket, kuota peserta, dan tayangkan kode QR absensi."
         action={
-          <ButtonLink to="/admin/events/new" variant="primary" size="sm">
-            <Plus className="size-4" />
-            Buat Event Baru
-          </ButtonLink>
+          <div className="flex flex-wrap items-center gap-2">
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowResetModal(true)}
+                className="neu-btn-glass rounded-xl px-3.5 py-2 text-[13px] font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-2 border border-purple-200/80 bg-purple-50/60 hover:bg-purple-100/60 shadow-xs transition-all"
+              >
+                <Crown className="size-4 text-purple-600" />
+                <span>Reset Data Event</span>
+              </button>
+            )}
+            <ButtonLink to="/admin/events/new" variant="primary" size="sm">
+              <Plus className="size-4" />
+              Buat Event Baru
+            </ButtonLink>
+          </div>
         }
       />
+
+      {/* Super Admin Status Banner */}
+      {isSuperAdmin && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/50 border border-purple-200/80 text-[13px]">
+          <div className="flex items-center gap-2.5">
+            <div className="size-7 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Crown className="size-4" />
+            </div>
+            <div>
+              <span className="font-bold text-purple-900">Mode Super Admin Aktif:</span>{" "}
+              <span className="text-purple-700">Anda berhak menghapus event siapa saja atau mereset seluruh data webinar untuk keperluan testing.</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="neu-btn-glass text-[12px] font-bold text-purple-700 px-3 py-1.5 rounded-lg border border-purple-300 shadow-xs shrink-0 hover:bg-purple-100"
+          >
+            Kelola Reset Data
+          </button>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -202,6 +242,39 @@ function AdminEventsPage() {
                   </td>
                 </tr>
               ))}
+
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-ink-secondary">
+                    <p className="text-[15px] font-semibold text-ink">Tidak ada event yang ditemukan.</p>
+                    <p className="mt-1 text-[13px] text-ink-tertiary">
+                      {events.length === 0
+                        ? "Seluruh data event saat ini kosong (telah di-reset oleh Super Admin)."
+                        : "Coba sesuaikan kata kunci pencarian atau tab filter status."}
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                      {isSuperAdmin && events.length === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            resetAllEvents();
+                            toast.success("Data Default Dipulihkan!", {
+                              description: "Event bawaan telah dimasukkan kembali.",
+                            });
+                          }}
+                          className="neu-btn-glass px-4 py-2 rounded-xl text-[13px] font-semibold text-purple-700 bg-purple-50/80 border border-purple-200 shadow-xs flex items-center gap-1.5 hover:bg-purple-100"
+                        >
+                          <RotateCcw className="size-4 text-purple-600" />
+                          Pulihkan Data Default
+                        </button>
+                      )}
+                      <ButtonLink to="/admin/events/new" variant="primary" size="sm">
+                        <Plus className="size-4" /> Buat Event Baru
+                      </ButtonLink>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -262,6 +335,101 @@ function AdminEventsPage() {
               </Button>
               <Button onClick={() => setLiveQrEvent(null)} variant="glass" size="sm" className="flex-1">
                 Tutup Layar
+              </Button>
+            </div>
+          </div>
+      {/* Super Admin Reset Data Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200 border border-purple-200">
+            <div className="flex items-center justify-between pb-3 border-b border-hairline">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <Crown className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">Reset Data Event (Super Admin)</h3>
+                  <p className="text-[12px] text-ink-tertiary">Akses Root untuk testing &amp; pembersihan data</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="neu-btn-glass size-8 flex items-center justify-center rounded-full text-ink-tertiary hover:text-ink cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl bg-purple-50/70 p-3.5 border border-purple-200/80 text-[12.5px] text-purple-900 leading-relaxed">
+                <p className="font-semibold flex items-center gap-1.5 text-purple-800">
+                  <ShieldAlert className="size-4 text-purple-600" />
+                  Hak Akses Super Admin Penuh
+                </p>
+                <p className="mt-1">
+                  Sebagai Super Admin, Anda dapat mengosongkan seluruh database event atau mengembalikannya ke data bawaan awal kapan saja.
+                </p>
+              </div>
+
+              {/* Action 1: Delete All */}
+              <div className="rounded-xl border border-red-200/80 bg-red-50/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-[13.5px] font-bold text-red-700 flex items-center gap-1.5">
+                    <Trash2 className="size-4 text-red-600" />
+                    Hapus Semua Event (Kosongkan Database)
+                  </h4>
+                  <p className="mt-0.5 text-[12px] text-ink-secondary">
+                    Menghapus seluruh ({events.length}) event webinar dari memori &amp; Supabase Cloud.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("PERINGATAN: Yakin ingin MENGHAPUS SEMUA EVENT? Semua event webinar akan dihapus permanen.")) {
+                      deleteAllEvents();
+                      setShowResetModal(false);
+                      toast.success("Semua Event Berhasil Dihapus!", {
+                        description: "Database event kini bersih dan kosong.",
+                      });
+                    }
+                  }}
+                  className="neu-btn-glass shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white bg-red-600 hover:bg-red-700 border-none shadow-xs transition-colors cursor-pointer"
+                >
+                  Hapus Semua Event
+                </button>
+              </div>
+
+              {/* Action 2: Reset to Defaults */}
+              <div className="rounded-xl border border-purple-200/80 bg-purple-50/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-[13.5px] font-bold text-purple-800 flex items-center gap-1.5">
+                    <RotateCcw className="size-4 text-purple-600" />
+                    Pulihkan Data Event Bawaan (Default)
+                  </h4>
+                  <p className="mt-0.5 text-[12px] text-ink-secondary">
+                    Mengisi kembali katalog event dengan data demo berkualitas tinggi (English Club, AI Talks, dll).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetAllEvents();
+                    setShowResetModal(false);
+                    toast.success("Data Event Dipulihkan!", {
+                      description: "Event demo bawaan telah dimuat ulang.",
+                    });
+                  }}
+                  className="neu-btn-glass shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold text-purple-800 bg-purple-100 hover:bg-purple-200 border border-purple-300 shadow-xs transition-colors cursor-pointer"
+                >
+                  Pulihkan Default
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <Button onClick={() => setShowResetModal(false)} variant="glass" size="sm">
+                Tutup
               </Button>
             </div>
           </div>

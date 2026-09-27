@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Lock, Mail, Presentation, ShieldCheck, Sparkles, User } from "lucide-react";
+import { ArrowLeft, Crown, Lock, Mail, Presentation, ShieldAlert, ShieldCheck, Sparkles, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useApp } from "../lib/store";
@@ -44,12 +44,22 @@ function AuthPage() {
 
     try {
       if (mode === "login") {
+        const isSuper =
+          email.toLowerCase().includes("superadmin") ||
+          email.toLowerCase().includes("root");
         const isSpeaker =
+          isSuper ||
           email.toLowerCase().includes("speaker") ||
           email.toLowerCase().includes("admin") ||
           email.toLowerCase().includes("host");
-        const roleName = isSpeaker ? "Speaker / Host" : "Peserta";
-        const userName = email.split("@")[0] || (isSpeaker ? "Speaker" : "Peserta");
+        const roleName = isSuper
+          ? "Super Admin"
+          : isSpeaker
+            ? "Speaker / Host"
+            : "Peserta";
+        const userName = isSuper
+          ? "Super Admin"
+          : email.split("@")[0] || (isSpeaker ? "Speaker" : "Peserta");
 
         loginUser({
           name: userName,
@@ -65,11 +75,16 @@ function AuthPage() {
           }
         }
 
-        toast.success("Berhasil masuk!", {
-          description: `Selamat datang kembali, ${userName}! Masuk ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}.`,
-        });
+        toast.success(
+          isSuper ? "Akses Root Super Admin Aktif!" : "Berhasil masuk!",
+          {
+            description: isSuper
+              ? "Hak akses penuh: Anda dapat mengedit, menghapus event & artikel blog siapa saja, serta mereset data."
+              : `Selamat datang kembali, ${userName}! Masuk ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}.`,
+          },
+        );
 
-        if (isSpeaker) {
+        if (isSpeaker || isSuper) {
           navigate({ to: "/admin" });
         } else {
           navigate({ to: "/dashboard" });
@@ -129,6 +144,18 @@ function AuthPage() {
     });
     toast.success("Masuk sebagai Speaker / Host", {
       description: "Selamat datang di Panel Speaker (Eka Revandi)",
+    });
+    navigate({ to: "/admin" });
+  };
+
+  const loginAsSuperAdmin = () => {
+    loginUser({
+      name: "Super Admin",
+      email: "superadmin@craveevent.id",
+      role: "Super Admin",
+    });
+    toast.success("Masuk sebagai Super Admin (Root)", {
+      description: "Hak akses penuh untuk mengelola, menghapus event/blog siapa saja, dan mereset data.",
     });
     navigate({ to: "/admin" });
   };
@@ -399,7 +426,7 @@ function AuthPage() {
                 </div>
                 <div className="min-w-0">
                   <span className="block text-[12px] font-semibold text-accent-strong leading-tight">
-                    Host / Admin
+                    Host / Speaker
                   </span>
                   <span className="block text-[10px] text-ink-tertiary truncate">
                     Eka Revandi
@@ -407,6 +434,33 @@ function AuthPage() {
                 </div>
               </button>
             </div>
+
+            {/* Super Admin Quick Demo Login */}
+            <button
+              type="button"
+              onClick={loginAsSuperAdmin}
+              className="mt-2.5 w-full neu-btn-glass rounded-2xl p-3 flex items-center justify-between transition-all hover:scale-[1.01] shadow-xs group border border-purple-200/80 bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/15 hover:border-purple-300"
+            >
+              <div className="flex items-center gap-2.5 text-left min-w-0">
+                <div className="size-8.5 shrink-0 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-xs text-white">
+                  <Crown className="size-4.5" strokeWidth={2.3} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12.5px] font-bold text-purple-700 leading-tight">
+                      Super Admin (Root)
+                    </span>
+                    <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[9.5px] font-extrabold text-purple-700 uppercase tracking-wider">
+                      Reset Data
+                    </span>
+                  </div>
+                  <span className="block text-[10.5px] text-ink-tertiary truncate">
+                    superadmin@craveevent.id &bull; Hak delete &amp; reset data semua orang
+                  </span>
+                </div>
+              </div>
+              <ShieldAlert className="size-4 text-purple-600 shrink-0 ml-2 group-hover:scale-110 transition-transform" />
+            </button>
           </div>
         </div>
 

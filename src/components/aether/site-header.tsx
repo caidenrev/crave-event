@@ -242,11 +242,18 @@ export function SiteHeader() {
 
   const isLoggedIn = !!currentUser;
 
+  const isSuper = currentUser?.role?.toLowerCase().includes("super");
   const isSpeaker =
+    isSuper ||
     currentUser?.role?.toLowerCase().includes("speaker") ||
-    currentUser?.role?.toLowerCase().includes("host");
+    currentUser?.role?.toLowerCase().includes("host") ||
+    currentUser?.role?.toLowerCase().includes("admin");
   const dashboardTarget = isSpeaker ? "/admin" : "/dashboard";
-  const dashboardLabel = isSpeaker ? "Panel Speaker" : "Dashboard";
+  const dashboardLabel = isSuper
+    ? "Super Admin"
+    : isSpeaker
+      ? "Panel Speaker"
+      : "Dashboard";
 
   // Auto-close menus on route change
   useEffect(() => {

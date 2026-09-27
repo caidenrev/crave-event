@@ -12,10 +12,12 @@ function AdminLayout() {
     name: currentUser?.name || "Eka Revandi",
     email: currentUser?.email || "host@crave.id",
     role:
-      currentUser?.role?.toLowerCase().includes("speaker") ||
-      currentUser?.role?.toLowerCase().includes("host")
-        ? currentUser.role
-        : "Speaker / Host",
+      currentUser?.role?.toLowerCase().includes("super")
+        ? "Super Admin"
+        : currentUser?.role?.toLowerCase().includes("speaker") ||
+          currentUser?.role?.toLowerCase().includes("host")
+          ? currentUser.role
+          : "Speaker / Host",
   };
 
   return (

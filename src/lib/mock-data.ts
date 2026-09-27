@@ -92,6 +92,29 @@ export const playlists: Playlist[] = [
   },
 ];
 
+export function normalizePlaylistName(name: string): string {
+  if (!name) return "";
+  return name.replace(/^#/, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function isPlaylistMatch(eventPlaylist: string, target: string): boolean {
+  if (!eventPlaylist || !target) return false;
+  if (target === "all") return true;
+
+  const normEvent = normalizePlaylistName(eventPlaylist);
+  const normTarget = normalizePlaylistName(target);
+
+  if (normEvent === normTarget) return true;
+
+  // Semantic keyword matching between tag, database naming, and title
+  if (normEvent.includes("tech") && normTarget.includes("tech")) return true;
+  if (normEvent.includes("english") && normTarget.includes("english")) return true;
+  if (normEvent.includes("career") && normTarget.includes("career")) return true;
+  if (normEvent.includes("belajar") && normTarget.includes("belajar")) return true;
+
+  return normEvent.includes(normTarget) || normTarget.includes(normEvent);
+}
+
 export const events: EventItem[] = [
   {
     id: "ev-1",

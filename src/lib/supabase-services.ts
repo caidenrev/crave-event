@@ -140,6 +140,81 @@ export const eventsApi = {
     const { error } = await supabase.from("events").delete().eq("id", id);
     return !error;
   },
+
+  async deleteAll(): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const { error } = await supabase.from("events").delete().neq("id", "");
+    return !error;
+  },
+};
+
+export const blogsApi = {
+  async fetchAll(): Promise<BlogPost[] | null> {
+    if (!isSupabaseConfigured) return null;
+    const { data, error } = await supabase
+      .from("blogs")
+      .select("*")
+      .order("published_at", { ascending: false });
+
+    if (error || !data) return null;
+    return data.map((b: any) => ({
+      id: b.id,
+      title: b.title,
+      slug: b.slug,
+      excerpt: b.excerpt,
+      content: b.content,
+      cover: b.cover_image || "/logo.png",
+      tag: "Tech & Career",
+      author: b.author_name || "Eka Revandi",
+      authorRole: "Speaker & Host",
+      authorAvatar: b.author_avatar || "/logo.png",
+      publishedAt: b.published_at ? b.published_at.split("T")[0] : new Date().toISOString().split("T")[0],
+      readMinutes: parseInt(b.reading_time || "5", 10) || 5,
+      status: b.is_published ? "published" : "draft",
+    }));
+  },
+
+  async create(post: Omit<BlogPost, "id">): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const { error } = await supabase.from("blogs").insert({
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      cover_image: post.cover,
+      author_name: post.author,
+      reading_time: `${post.readMinutes} min read`,
+      is_published: post.status === "published",
+    });
+    return !error;
+  },
+
+  async update(id: string, updates: Partial<BlogPost>): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const payload: any = {};
+    if (updates.title) payload.title = updates.title;
+    if (updates.slug) payload.slug = updates.slug;
+    if (updates.excerpt) payload.excerpt = updates.excerpt;
+    if (updates.content) payload.content = updates.content;
+    if (updates.cover) payload.cover_image = updates.cover;
+    if (updates.status !== undefined) payload.is_published = updates.status === "published";
+    if (updates.readMinutes) payload.reading_time = `${updates.readMinutes} min read`;
+
+    const { error } = await supabase.from("blogs").update(payload).eq("id", id);
+    return !error;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const { error } = await supabase.from("blogs").delete().eq("id", id);
+    return !error;
+  },
+
+  async deleteAll(): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const { error } = await supabase.from("blogs").delete().neq("id", "");
+    return !error;
+  },
 };
 
 export const registrationsApi = {

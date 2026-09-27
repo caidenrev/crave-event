@@ -220,7 +220,7 @@ create policy "Admin dapat mengubah playlist"
   on public.playlists for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- EVENTS POLICIES (Publik baca event, Admin kelola)
@@ -235,7 +235,7 @@ create policy "Admin dapat menambah atau mengedit event"
   on public.events for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- REGISTRATIONS POLICIES
@@ -245,7 +245,7 @@ create policy "Pengguna dapat melihat pendaftaran miliknya"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 drop policy if exists "Pengguna dapat mendaftar event" on public.registrations;
@@ -260,7 +260,7 @@ create policy "Pengguna dapat memperbarui pendaftaran miliknya"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- CERTIFICATES POLICIES
@@ -276,7 +276,7 @@ create policy "Admin atau sistem dapat menerbitkan sertifikat"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- BLOGS POLICIES
@@ -284,14 +284,14 @@ drop policy if exists "Semua orang dapat membaca blog publik" on public.blogs;
 create policy "Semua orang dapat membaca blog publik"
   on public.blogs for select
   to anon, authenticated
-  using (is_published = true or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+  using (is_published = true or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin')));
 
 drop policy if exists "Admin dapat mengelola artikel blog" on public.blogs;
 create policy "Admin dapat mengelola artikel blog"
   on public.blogs for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- ==============================================================================

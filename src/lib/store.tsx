@@ -18,7 +18,7 @@ import {
   type Playlist,
 } from "./mock-data";
 import { isSupabaseConfigured } from "./supabase";
-import { eventsApi, registrationsApi } from "./supabase-services";
+import { eventsApi, registrationsApi, blogsApi } from "./supabase-services";
 
 type AppContextType = {
   events: EventItem[];
@@ -27,8 +27,9 @@ type AppContextType = {
   attendees: Attendee[];
   blogPosts: BlogPost[];
   currentUser: { name: string; email: string; role: string } | null;
+  isSuperAdmin: boolean;
   isCloudConnected: boolean;
-  loginUser: (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | string }) => void;
+  loginUser: (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | "Super Admin" | string }) => void;
   logoutUser: () => void;
   registerEvent: (eventId: string, paid?: boolean) => void;
   payEvent: (eventId: string) => void;
@@ -40,10 +41,15 @@ type AppContextType = {
   createEvent: (data: Omit<EventItem, "id" | "registered" | "attended">) => EventItem;
   updateEvent: (id: string, updates: Partial<EventItem>) => void;
   deleteEvent: (id: string) => void;
+  deleteAllEvents: () => void;
+  resetAllEvents: () => void;
   createPlaylist: (data: Omit<Playlist, "id" | "eventCount">) => void;
   createBlogPost: (data: Omit<BlogPost, "id">) => void;
   updateBlogPost: (id: string, updates: Partial<BlogPost>) => void;
   deleteBlogPost: (id: string) => void;
+  deleteAllBlogPosts: () => void;
+  resetAllBlogPosts: () => void;
+  resetAllSystemData: () => void;
   toggleAttendeeCheckIn: (attendeeId: string) => void;
   toggleAttendeePaid: (attendeeId: string) => void;
   isRegistered: (eventId: string) => boolean;
@@ -368,6 +374,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isSuperAdmin = Boolean(
+    currentUser?.role?.toLowerCase().includes("super") ||
+    currentUser?.email?.toLowerCase().includes("superadmin")
+  );
+
+  const deleteAllEvents = () => {
+    setEvents([]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify([]));
+    } catch {}
+    if (isSupabaseConfigured) {
+      eventsApi.deleteAll().catch(console.error);
+    }
+  };
+
+  const resetAllEvents = () => {
+    setEvents(initialEvents);
+    try {
+      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(initialEvents));
+    } catch {}
+  };
+
   const createPlaylist = (data: Omit<Playlist, "id" | "eventCount">) => {
     const newPl: Playlist = {
       ...data,
@@ -383,14 +411,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: `bp-${Date.now()}`,
     };
     setBlogPosts((prev) => [newPost, ...prev]);
+    if (isSupabaseConfigured) {
+      blogsApi.create(data).catch(console.error);
+    }
   };
 
   const updateBlogPost = (id: string, updates: Partial<BlogPost>) => {
     setBlogPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    if (isSupabaseConfigured) {
+      blogsApi.update(id, updates).catch(console.error);
+    }
   };
 
   const deleteBlogPost = (id: string) => {
     setBlogPosts((prev) => prev.filter((p) => p.id !== id));
+    if (isSupabaseConfigured) {
+      blogsApi.delete(id).catch(console.error);
+    }
+  };
+
+  const deleteAllBlogPosts = () => {
+    setBlogPosts([]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify([]));
+    } catch {}
+    if (isSupabaseConfigured) {
+      blogsApi.deleteAll().catch(console.error);
+    }
+  };
+
+  const resetAllBlogPosts = () => {
+    setBlogPosts(initialBlogPosts);
+    try {
+      localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(initialBlogPosts));
+    } catch {}
+  };
+
+  const resetAllSystemData = () => {
+    setEvents(initialEvents);
+    setBlogPosts(initialBlogPosts);
+    setAttendees(initialAttendees);
+    setMyEvents(initialMyEvents);
+    setPlaylists(initialPlaylists);
+    try {
+      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(initialEvents));
+      localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(initialBlogPosts));
+      localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(initialAttendees));
+      localStorage.setItem(STORAGE_KEYS.MY_EVENTS, JSON.stringify(initialMyEvents));
+      localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(initialPlaylists));
+    } catch {}
   };
 
   const toggleAttendeeCheckIn = (attendeeId: string) => {
@@ -426,6 +495,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         attendees,
         blogPosts,
         currentUser,
+        isSuperAdmin,
         isCloudConnected: isSupabaseConfigured,
         loginUser,
         logoutUser,
@@ -435,10 +505,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createEvent,
         updateEvent,
         deleteEvent,
+        deleteAllEvents,
+        resetAllEvents,
         createPlaylist,
         createBlogPost,
         updateBlogPost,
         deleteBlogPost,
+        deleteAllBlogPosts,
+        resetAllBlogPosts,
+        resetAllSystemData,
         toggleAttendeeCheckIn,
         toggleAttendeePaid,
         isRegistered,

@@ -26,7 +26,7 @@ import {
   SectionHeading,
 } from "../components/aether/primitives";
 import { SiteFooter, SiteHeader } from "../components/aether/site-header";
-import { formatShortDate, type EventItem } from "../lib/mock-data";
+import { formatShortDate, isPlaylistMatch, type EventItem } from "../lib/mock-data";
 import { useApp } from "../lib/store";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -266,34 +266,40 @@ function IndexPage() {
           />
 
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {playlists.map((pl) => (
-              <Link
-                key={pl.id}
-                to="/events"
-                search={{ playlist: pl.tag }}
-                className="glass lift group flex flex-col justify-between rounded-lg p-6"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <Badge tone="neutral">{pl.tag}</Badge>
-                    <span className="text-[12px] font-semibold text-ink-tertiary">
-                      {pl.eventCount} Event
+            {playlists.map((pl) => {
+              const count = events.filter(
+                (ev) => isPlaylistMatch(ev.playlist, pl.tag) || isPlaylistMatch(ev.playlist, pl.title),
+              ).length;
+
+              return (
+                <Link
+                  key={pl.id}
+                  to="/events"
+                  search={{ playlist: pl.tag }}
+                  className="glass lift group flex flex-col justify-between rounded-lg p-6"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Badge tone="neutral">{pl.tag}</Badge>
+                      <span className="text-[12px] font-semibold text-ink-tertiary">
+                        {count > 0 ? `${count} Event` : "Segera Hadir"}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-[18px] font-semibold text-ink group-hover:text-accent transition-colors">
+                      {pl.title}
+                    </h3>
+                    <p className="mt-2 text-[13px] leading-normal text-ink-secondary">
+                      {pl.description}
+                    </p>
+                  </div>
+                  <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4">
+                    <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
+                      Lihat Jadwal &rarr;
                     </span>
                   </div>
-                  <h3 className="mt-4 text-[18px] font-semibold text-ink group-hover:text-accent transition-colors">
-                    {pl.title}
-                  </h3>
-                  <p className="mt-2 text-[13px] leading-normal text-ink-secondary">
-                    {pl.description}
-                  </p>
-                </div>
-                <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4">
-                  <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
-                    Lihat Jadwal &rarr;
-                  </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

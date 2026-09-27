@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Crown,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { useApp } from "../../lib/store";
@@ -110,12 +111,27 @@ export function DashboardShell({
             {/* User Profile Summary */}
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/70 border border-hairline">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
-                  {displayUser.name.slice(0, 2).toUpperCase()}
-                </span>
+                {displayUser.role?.toLowerCase().includes("super") ? (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-purple-600 text-white shadow-xs">
+                    <Crown className="size-4.5" />
+                  </span>
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
+                    {displayUser.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-bold text-ink">{displayUser.name}</p>
-                  <p className="truncate text-[11px] text-ink-tertiary capitalize">{displayUser.role}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-[13px] font-bold text-ink">{displayUser.name}</p>
+                    {displayUser.role?.toLowerCase().includes("super") && (
+                      <span className="rounded-full bg-purple-100 px-1.5 py-0.2 text-[9px] font-extrabold text-purple-700">
+                        ROOT
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-[11px] text-ink-tertiary capitalize">
+                    {displayUser.role?.toLowerCase().includes("super") ? "Super Admin" : displayUser.role}
+                  </p>
                 </div>
               </div>
               <button
@@ -231,14 +247,33 @@ export function DashboardShell({
             >
               Beralih ke {role === "admin" ? "dashboard peserta" : "panel speaker"}
             </Link>
-            <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-white/70 p-2.5 shadow-xs border border-white/80">
+            <div className={`mt-2 flex items-center justify-between gap-2 rounded-xl p-2.5 shadow-xs border transition-all ${
+              displayUser.role?.toLowerCase().includes("super")
+                ? "bg-purple-50/70 border-purple-200/80"
+                : "bg-white/70 border-white/80"
+            }`}>
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex size-8.5 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
-                  {displayUser.name.slice(0, 2).toUpperCase()}
-                </span>
+                {displayUser.role?.toLowerCase().includes("super") ? (
+                  <span className="flex size-8.5 shrink-0 items-center justify-center rounded-pill bg-purple-600 text-white shadow-xs">
+                    <Crown className="size-4" />
+                  </span>
+                ) : (
+                  <span className="flex size-8.5 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
+                    {displayUser.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
                 <div className="min-w-0">
-                  <p className="truncate text-[12.5px] font-semibold text-ink">{displayUser.name}</p>
-                  <p className="truncate text-[10.5px] text-ink-tertiary capitalize">{displayUser.role}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-[12.5px] font-semibold text-ink">{displayUser.name}</p>
+                    {displayUser.role?.toLowerCase().includes("super") && (
+                      <span className="rounded-full bg-purple-100 px-1.5 py-0.2 text-[8.5px] font-extrabold text-purple-700">
+                        ROOT
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-[10.5px] text-ink-tertiary capitalize">
+                    {displayUser.role?.toLowerCase().includes("super") ? "Super Admin" : displayUser.role}
+                  </p>
                 </div>
               </div>
               <button
