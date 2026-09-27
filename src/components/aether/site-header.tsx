@@ -320,13 +320,24 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 px-4 pt-3 sm:pt-4">
-      {/* Unified Expandable Capsule Navbar */}
-      <nav
-        className={`mx-auto max-w-6xl rounded-[26px] border border-white/80 bg-white md:bg-white/70 md:backdrop-blur-xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff] transition-shadow duration-200 overflow-hidden transform-gpu ${
-          isMobileMenuOpen ? "shadow-2xl" : ""
-        }`}
-      >
+    <header className="sticky top-0 z-50">
+      {/* Mobile backdrop scrim when menu is open */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={closeAllMenus}
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 md:hidden animate-in fade-in duration-200"
+        />
+      )}
+
+      <div className="relative z-50 mx-auto max-w-6xl px-4 pt-3 sm:pt-4">
+        {/* Reservation wrapper so page layout below never shifts/reflows during animation */}
+        <div className="h-[48px] sm:h-auto relative">
+          {/* Unified Expandable Capsule Navbar */}
+          <nav
+            className={`w-full rounded-[26px] border border-white/80 bg-white md:bg-white/70 md:backdrop-blur-xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff] transition-shadow duration-200 overflow-hidden transform-gpu absolute top-0 left-0 right-0 md:relative md:top-auto md:left-auto md:right-auto ${
+              isMobileMenuOpen ? "shadow-2xl ring-1 ring-slate-900/5" : ""
+            }`}
+          >
         {/* Top Navbar Row */}
         <div className="flex items-center justify-between w-full">
           {/* Left Side: Brand Logo */}
@@ -582,6 +593,8 @@ export function SiteHeader() {
           </div>
         </div>
       </nav>
+        </div>
+      </div>
     </header>
   );
 }
