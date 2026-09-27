@@ -19,6 +19,7 @@ import {
 } from "./mock-data";
 import { isSupabaseConfigured } from "./supabase";
 import { eventsApi, registrationsApi, blogsApi } from "./supabase-services";
+import { deleteEventServerFn, deleteAllEventsServerFn } from "./server-api";
 
 type AppContextType = {
   events: EventItem[];
@@ -44,6 +45,8 @@ type AppContextType = {
   deleteAllEvents: () => void;
   resetAllEvents: () => void;
   createPlaylist: (data: Omit<Playlist, "id" | "eventCount">) => void;
+  updatePlaylist: (id: string, updates: Partial<Omit<Playlist, "id">>) => void;
+  deletePlaylist: (id: string) => void;
   createBlogPost: (data: Omit<BlogPost, "id">) => void;
   updateBlogPost: (id: string, updates: Partial<BlogPost>) => void;
   deleteBlogPost: (id: string) => void;
@@ -61,6 +64,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 const STORAGE_KEYS = {
   EVENTS: "aether_events_v1",
+  EVENTS_CLEARED: "aether_events_cleared_v1",
   PLAYLISTS: "aether_playlists_v1",
   MY_EVENTS: "aether_my_events_v1",
   ATTENDEES: "aether_attendees_v1",
@@ -76,6 +80,8 @@ const getUserRegistrationsKey = (email?: string | null) => {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<EventItem[]>(() => {
     if (typeof window === "undefined") return initialEvents;
+    const isCleared = localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
+    if (isCleared) return [];
     const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
     return saved ? JSON.parse(saved) : initialEvents;
   });
@@ -201,11 +207,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) return;
 
     let isMounted = true;
-    eventsApi.fetchAll().then((remoteEvents) => {
-      if (isMounted && remoteEvents && remoteEvents.length > 0) {
-        setEvents(remoteEvents);
-      }
-    });
+    const isCleared =
+      typeof window !== "undefined" &&
+      localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
+
+    if (!isCleared) {
+      eventsApi.fetchAll().then((remoteEvents) => {
+        if (isMounted && remoteEvents && remoteEvents.length > 0) {
+          setEvents(remoteEvents);
+        }
+      });
+    }
 
     registrationsApi.getMyRegistrations().then((remoteRegs) => {
       if (isMounted && remoteRegs && remoteRegs.length > 0) {
@@ -401,6 +413,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    try {
+      localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
+    } catch {}
+
     return newEvent;
   };
 
@@ -412,7 +428,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteEvent = (id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    setEvents((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      if (updated.length === 0) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.EVENTS_CLEARED, "true");
+        } catch {}
+      }
+      return updated;
+    });
+    deleteEventServerFn({ data: id }).catch(console.error);
     if (isSupabaseConfigured) {
       eventsApi.delete(id).catch(console.error);
     }
@@ -428,7 +453,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEvents([]);
     try {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.EVENTS_CLEARED, "true");
     } catch {}
+    deleteAllEventsServerFn().catch(console.error);
     if (isSupabaseConfigured) {
       eventsApi.deleteAll().catch(console.error);
     }
@@ -438,6 +465,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEvents(initialEvents);
     try {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(initialEvents));
+      localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
     } catch {}
   };
 
@@ -448,6 +476,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       eventCount: 0,
     };
     setPlaylists((prev) => [...prev, newPl]);
+  };
+
+  const updatePlaylist = (id: string, updates: Partial<Omit<Playlist, "id">>) => {
+    setPlaylists((prev) =>
+      prev.map((pl) => (pl.id === id ? { ...pl, ...updates } : pl)),
+    );
+  };
+
+  const deletePlaylist = (id: string) => {
+    setPlaylists((prev) => prev.filter((pl) => pl.id !== id));
   };
 
   const createBlogPost = (data: Omit<BlogPost, "id">) => {
@@ -557,6 +595,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteAllEvents,
         resetAllEvents,
         createPlaylist,
+        updatePlaylist,
+        deletePlaylist,
         createBlogPost,
         updateBlogPost,
         deleteBlogPost,
