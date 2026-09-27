@@ -8,10 +8,13 @@ create extension if not exists "uuid-ossp";
 
 -- 2. ENUM TYPES (Idempotent using DO blocks to prevent 'type already exists' error)
 do $$ begin
-  create type user_role as enum ('user', 'admin');
+  create type user_role as enum ('user', 'admin', 'superadmin');
 exception
   when duplicate_object then null;
 end $$;
+
+-- Pastikan value 'superadmin' ditambahkan jika tipe user_role sudah ada sebelumnya
+alter type user_role add value if not exists 'superadmin';
 
 do $$ begin
   create type event_type as enum ('free', 'paid');
@@ -164,9 +167,9 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', null),
     case
-      -- Jika user memilih role speaker saat register atau email admin
-      when lower(coalesce(new.raw_user_meta_data->>'role', '')) in ('speaker', 'admin', 'host') then 'admin'::user_role
-      when new.email like '%admin%' or new.email = 'ekarevandi@crave.id' then 'admin'::user_role
+      -- Jika user memilih role superadmin/speaker saat register atau email admin
+      when lower(coalesce(new.raw_user_meta_data->>'role', '')) in ('superadmin', 'super admin', 'speaker', 'admin', 'host') then 'admin'::user_role
+      when new.email like '%admin%' or new.email like '%superadmin%' or new.email = 'ekarevandi@crave.id' then 'admin'::user_role
       else 'user'::user_role
     end
   )
@@ -220,7 +223,7 @@ create policy "Admin dapat mengubah playlist"
   on public.playlists for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 -- EVENTS POLICIES (Publik baca event, Admin kelola)
@@ -235,7 +238,7 @@ create policy "Admin dapat menambah atau mengedit event"
   on public.events for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 -- REGISTRATIONS POLICIES
@@ -245,7 +248,7 @@ create policy "Pengguna dapat melihat pendaftaran miliknya"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 drop policy if exists "Pengguna dapat mendaftar event" on public.registrations;
@@ -260,7 +263,7 @@ create policy "Pengguna dapat memperbarui pendaftaran miliknya"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 -- CERTIFICATES POLICIES
@@ -276,7 +279,7 @@ create policy "Admin atau sistem dapat menerbitkan sertifikat"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 -- BLOGS POLICIES
@@ -284,14 +287,14 @@ drop policy if exists "Semua orang dapat membaca blog publik" on public.blogs;
 create policy "Semua orang dapat membaca blog publik"
   on public.blogs for select
   to anon, authenticated
-  using (is_published = true or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin')));
+  using (is_published = true or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin')));
 
 drop policy if exists "Admin dapat mengelola artikel blog" on public.blogs;
 create policy "Admin dapat mengelola artikel blog"
   on public.blogs for all
   to authenticated
   using (
-    exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin'))
+    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
   );
 
 -- ==============================================================================
