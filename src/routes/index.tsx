@@ -77,10 +77,11 @@ function IndexPage() {
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-6xl font-extrabold tracking-tight text-ink sm:leading-[1.14]">
-            Kelola Event Tanpa Ribet{" "}
+          <h1 className="clay-puff-heading text-4xl sm:text-6xl lg:text-[68px] font-bold tracking-tight text-slate-950 sm:leading-[1.14]">
+            Kelola <span className="clay-puff-blue">Event</span> Tanpa{" "}
+            <span className="clay-puff-blue">Ribet</span>{" "}
             <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-accent via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-slate-950">
               Dimanapun &amp; Kapanpun.
             </span>
           </h1>
