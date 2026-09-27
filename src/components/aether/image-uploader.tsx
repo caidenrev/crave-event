@@ -1,13 +1,16 @@
 import {
   Check,
   Globe,
-  Image as ImageIcon,
   Palette,
-  Sparkles,
   Trash2,
   UploadCloud,
+  Loader2,
+  CheckCircle2,
+  Cloud,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { uploadMediaFile } from "../../lib/storage";
 
 export const DEFAULT_PRESET_BANNERS = [
   {
@@ -51,20 +54,24 @@ interface ImageUploaderProps {
   helperText?: string;
   previewTitle?: string;
   previewBadge?: string;
+  folder?: "events" | "blogs" | "avatars" | string;
 }
 
 export function ImageUploader({
   value,
   onChange,
   label = "Thumbnail / Banner",
-  helperText = "Pilih preset gradien modern, upload file gambar dari perangkat, atau tempelkan URL gambar.",
+  helperText = "Pilih preset gradien modern, upload file gambar langsung ke Cloud Storage, atau tempelkan URL gambar.",
   previewTitle = "Judul Konten Anda",
   previewBadge = "#Webinar",
+  folder = "events",
 }: ImageUploaderProps) {
   const [tab, setTab] = useState<"preset" | "upload" | "url">("preset");
   const [customUrl, setCustomUrl] = useState(
     value.startsWith("http") || value.startsWith("https") ? value : "",
   );
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isImageSrc =
@@ -73,38 +80,61 @@ export function ImageUploader({
     value.startsWith("data:image/") ||
     value.startsWith("/");
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const isCloudStorage = value.includes("supabase.co/storage") || value.includes("/crave-media/");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit: 4MB
-    if (file.size > 4 * 1024 * 1024) {
-      alert("Ukuran gambar terlalu besar. Maksimal 4MB.");
-      return;
-    }
+    setIsUploading(true);
+    setUploadStatus("Mengunggah ke Cloud Storage...");
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (typeof event.target?.result === "string") {
-        onChange(event.target.result);
-        setTab("upload");
+    try {
+      const result = await uploadMediaFile(file, folder);
+      onChange(result.url);
+      setTab("upload");
+
+      if (result.isCloud) {
+        toast.success("Foto Berhasil Diunggah!", {
+          description: "Gambar tersimpan permanen di Supabase Cloud Storage.",
+        });
+      } else {
+        toast.info("Mode Offline Aktif", {
+          description: "Gambar disimpan dalam memori lokal untuk pratinjau.",
+        });
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error("Gagal mengunggah gambar", {
+        description: err.message || "Pastikan koneksi internet stabil dan ukuran file maks 5MB.",
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadStatus(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleUrlApply = () => {
     if (customUrl.trim()) {
       onChange(customUrl.trim());
+      toast.success("URL Gambar Diterapkan!");
     }
   };
 
   return (
     <div className="space-y-3">
       {/* Label and Helper */}
-      <div>
-        <label className="aether-meta block text-ink-tertiary">{label}</label>
-        {helperText && <p className="text-[12px] text-ink-secondary mt-0.5">{helperText}</p>}
+      <div className="flex items-center justify-between">
+        <div>
+          <label className="aether-meta block text-ink-tertiary">{label}</label>
+          {helperText && <p className="text-[12px] text-ink-secondary mt-0.5">{helperText}</p>}
+        </div>
+        {isCloudStorage && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200">
+            <Cloud className="size-3" />
+            Tersimpan di Cloud
+          </span>
+        )}
       </div>
 
       {/* Main Container with Preview & Controls */}
@@ -120,7 +150,7 @@ export function ImageUploader({
                   onChange(DEFAULT_PRESET_BANNERS[0]!.value);
                   setCustomUrl("");
                 }}
-                className="flex items-center gap-1 text-danger hover:underline text-[11px]"
+                className="flex items-center gap-1 text-danger hover:underline text-[11px] cursor-pointer"
               >
                 <Trash2 className="size-3" />
                 Reset Default
@@ -150,9 +180,16 @@ export function ImageUploader({
               <span className="rounded-pill bg-white/90 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-accent shadow-xs">
                 {previewBadge}
               </span>
-              <span className="rounded-pill bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-medium text-white/90">
-                16:9 HD
-              </span>
+              <div className="flex items-center gap-1.5">
+                {isCloudStorage && (
+                  <span className="rounded-pill bg-emerald-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-semibold text-white flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Cloud Hosted
+                  </span>
+                )}
+                <span className="rounded-pill bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-medium text-white/90">
+                  16:9 HD
+                </span>
+              </div>
             </div>
 
             {/* Bottom Title Preview */}
@@ -172,7 +209,7 @@ export function ImageUploader({
           <button
             type="button"
             onClick={() => setTab("preset")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all cursor-pointer ${
               tab === "preset"
                 ? "bg-accent text-white shadow-xs"
                 : "text-ink-secondary hover:text-ink"
@@ -184,19 +221,19 @@ export function ImageUploader({
           <button
             type="button"
             onClick={() => setTab("upload")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all cursor-pointer ${
               tab === "upload"
                 ? "bg-accent text-white shadow-xs"
                 : "text-ink-secondary hover:text-ink"
             }`}
           >
             <UploadCloud className="size-3.5" />
-            <span>Upload File</span>
+            <span>Upload File Cloud</span>
           </button>
           <button
             type="button"
             onClick={() => setTab("url")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold rounded-lg transition-all cursor-pointer ${
               tab === "url"
                 ? "bg-accent text-white shadow-xs"
                 : "text-ink-secondary hover:text-ink"
@@ -217,7 +254,7 @@ export function ImageUploader({
                   key={preset.label}
                   type="button"
                   onClick={() => onChange(preset.value)}
-                  className={`group relative h-16 rounded-xl p-2 flex flex-col justify-end text-left shadow-xs transition-all ${
+                  className={`group relative h-16 rounded-xl p-2 flex flex-col justify-end text-left shadow-xs transition-all cursor-pointer ${
                     isSelected
                       ? "ring-2 ring-accent scale-102"
                       : "hover:scale-102 hover:shadow-md"
@@ -238,27 +275,52 @@ export function ImageUploader({
           </div>
         )}
 
-        {/* Tab 2: Upload Local Image */}
+        {/* Tab 2: Upload Image to Supabase Cloud */}
         {tab === "upload" && (
           <div className="pt-1">
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={isUploading}
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
               onChange={handleFileUpload}
               className="hidden"
             />
             <div
-              onClick={() => fileInputRef.current?.click()}
-              className="group cursor-pointer rounded-xl border-2 border-dashed border-accent/40 bg-surface/60 hover:bg-accent-tint/20 hover:border-accent p-6 text-center transition-all"
+              onClick={() => {
+                if (!isUploading) fileInputRef.current?.click();
+              }}
+              className={`group rounded-xl border-2 border-dashed p-6 text-center transition-all ${
+                isUploading
+                  ? "border-accent/60 bg-accent-tint/30 cursor-wait"
+                  : "border-accent/40 bg-surface/60 hover:bg-accent-tint/20 hover:border-accent cursor-pointer"
+              }`}
             >
-              <UploadCloud className="size-8 mx-auto text-accent group-hover:scale-110 transition-transform" />
-              <p className="mt-2 text-[13px] font-semibold text-ink">
-                Klik untuk memilih file gambar dari komputermu
-              </p>
-              <p className="text-[11px] text-ink-tertiary mt-1">
-                Format PNG, JPG, WEBP, atau GIF (Maks. 4MB)
-              </p>
+              {isUploading ? (
+                <div className="space-y-2">
+                  <Loader2 className="size-8 mx-auto text-accent animate-spin" />
+                  <p className="text-[13px] font-semibold text-accent-strong">
+                    {uploadStatus || "Sedang mengunggah gambar..."}
+                  </p>
+                  <p className="text-[11px] text-ink-tertiary">
+                    Mohon tunggu beberapa saat hingga upload selesai
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <UploadCloud className="size-8 mx-auto text-accent group-hover:scale-110 transition-transform" />
+                  <p className="mt-2 text-[13px] font-semibold text-ink">
+                    Pilih file gambar untuk diunggah ke Supabase Storage
+                  </p>
+                  <p className="text-[11px] text-ink-tertiary mt-1">
+                    Format didukung: PNG, JPG, WEBP, GIF, SVG (Maksimal 5MB)
+                  </p>
+                  <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-emerald-600 font-medium">
+                    <Cloud className="size-3.5" />
+                    <span>Tersimpan otomatis ke bucket: crave-media/{folder}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -277,7 +339,7 @@ export function ImageUploader({
               <button
                 type="button"
                 onClick={handleUrlApply}
-                className="neu-btn-blue px-4 py-2 text-[12px] font-semibold text-white shrink-0"
+                className="neu-btn-blue px-4 py-2 text-[12px] font-semibold text-white shrink-0 cursor-pointer"
               >
                 Terapkan
               </button>

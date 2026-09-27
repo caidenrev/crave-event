@@ -369,3 +369,45 @@ begin
   );
 end;
 $$ language plpgsql security definer;
+
+-- ==============================================================================
+-- 10. STORAGE BUCKET: crave-media (Banners, Thumbnails, Avatars)
+-- ==============================================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'crave-media',
+  'crave-media',
+  true,
+  5242880, -- 5 MB limit
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+
+-- RLS Storage Policies
+-- 1. Public can view/download all media
+drop policy if exists "Public Access to crave-media" on storage.objects;
+create policy "Public Access to crave-media"
+on storage.objects for select
+using (bucket_id = 'crave-media');
+
+-- 2. Allow upload to crave-media (anon & authenticated)
+drop policy if exists "Allow upload to crave-media" on storage.objects;
+create policy "Allow upload to crave-media"
+on storage.objects for insert
+with check (bucket_id = 'crave-media');
+
+-- 3. Allow update in crave-media
+drop policy if exists "Allow update to crave-media" on storage.objects;
+create policy "Allow update to crave-media"
+on storage.objects for update
+using (bucket_id = 'crave-media');
+
+-- 4. Allow delete from crave-media
+drop policy if exists "Allow delete from crave-media" on storage.objects;
+create policy "Allow delete from crave-media"
+on storage.objects for delete
+using (bucket_id = 'crave-media');
+

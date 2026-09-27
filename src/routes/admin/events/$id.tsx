@@ -368,9 +368,10 @@ function AdminEditEventPage() {
           value={thumbnail}
           onChange={setThumbnail}
           label="Thumbnail & Banner Webinar"
-          helperText="Pilih preset gradien modern, upload file gambar/poster dari perangkat, atau tempelkan URL gambar."
+          helperText="Pilih preset gradien modern, upload file gambar/poster ke Cloud Storage, atau tempelkan URL gambar."
           previewTitle={title || "Judul Webinar"}
           previewBadge={playlist}
+          folder="events"
         />
 
         {/* Save button */}

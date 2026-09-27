@@ -167,9 +167,10 @@ function AdminNewBlogPage() {
             value={cover}
             onChange={setCover}
             label="Thumbnail & Sampul Artikel"
-            helperText="Upload gambar sampul (format JPG/PNG/WebP) atau pilih salah satu preset gradien modern beresolusi tinggi."
+            helperText="Upload gambar sampul ke Cloud Storage atau pilih salah satu preset gradien modern beresolusi tinggi."
             previewTitle={title || "Judul Artikel Blog"}
             previewBadge={tag}
+            folder="blogs"
           />
         </div>
 

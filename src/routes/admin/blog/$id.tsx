@@ -207,9 +207,10 @@ function AdminEditBlogPage() {
             value={cover}
             onChange={setCover}
             label="Thumbnail & Sampul Artikel"
-            helperText="Upload gambar sampul baru atau pilih preset gradien modern."
+            helperText="Upload gambar sampul baru ke Cloud Storage atau pilih preset gradien modern."
             previewTitle={title || "Judul Artikel Blog"}
             previewBadge={tag}
+            folder="blogs"
           />
         </div>
 
