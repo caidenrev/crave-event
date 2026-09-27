@@ -323,8 +323,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 px-4 pt-3 sm:pt-4">
       {/* Unified Expandable Capsule Navbar */}
       <nav
-        className={`mx-auto max-w-6xl rounded-[26px] border border-white/80 bg-white/70 backdrop-blur-xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff] transition-[box-shadow] duration-200 overflow-hidden ${
-          isMobileMenuOpen ? "shadow-2xl bg-white/95" : ""
+        className={`mx-auto max-w-6xl rounded-[26px] border border-white/80 bg-white md:bg-white/70 md:backdrop-blur-xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff] transition-shadow duration-200 overflow-hidden transform-gpu ${
+          isMobileMenuOpen ? "shadow-2xl" : ""
         }`}
       >
         {/* Top Navbar Row */}
@@ -428,15 +428,16 @@ export function SiteHeader() {
           </div>
         </div>
 
-        {/* Mobile Expanding Drawer - Seamlessly Attached & Unfolding from within the Capsule */}
+        {/* Mobile Expanding Drawer - Butter-smooth 60fps CSS Grid Accordion */}
         <div
-          className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden ${
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[grid-template-rows,opacity] md:hidden ${
             isMobileMenuOpen
-              ? "grid-rows-[1fr] opacity-100 mt-3 pt-3 pb-1 border-t border-hairline/80"
-              : "grid-rows-[0fr] opacity-0 mt-0 pt-0 pb-0 border-t-0 border-transparent pointer-events-none"
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0 pointer-events-none"
           }`}
         >
-          <div className="min-h-0 overflow-hidden space-y-1.5 px-0.5">
+          <div className="min-h-0 overflow-hidden">
+            <div className="pt-3 mt-3 pb-1 border-t border-hairline/80 space-y-1.5 px-0.5">
             {/* Beranda */}
             <Link
               to="/"
@@ -576,6 +577,7 @@ export function SiteHeader() {
                   </Link>
                 </div>
               )}
+            </div>
             </div>
           </div>
         </div>
