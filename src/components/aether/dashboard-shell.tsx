@@ -14,9 +14,6 @@ import {
   Ticket,
   Users,
   LogOut,
-  Menu,
-  X,
-  ChevronRight,
   Crown,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
@@ -58,13 +55,7 @@ export function DashboardShell({
 }) {
   const { logoutUser } = useApp();
   const location = useLocation();
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const nav = role === "admin" ? adminNav : userNav;
-
-  // Auto close mobile drawer on route change
-  useEffect(() => {
-    setMobileDrawerOpen(false);
-  }, [location.pathname]);
 
   const displayUser = user || {
     name: role === "admin" ? "Eka Revandi" : "Peserta",
@@ -74,7 +65,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Mobile Top Bar with Home Shortcut & Hamburger Menu */}
+      {/* Mobile Top Bar: Clean Branding, Home Shortcut & Quick Logout */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-hairline/80 bg-white/85 px-4 py-2.5 backdrop-blur-xl lg:hidden">
         <Link to="/" className="flex items-center gap-2 select-none group">
           <img
@@ -90,103 +81,21 @@ export function DashboardShell({
             className="neu-btn-glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-ink-secondary hover:text-accent shadow-xs active:scale-95 transition-all"
           >
             <Home className="size-3.5 text-accent" strokeWidth={2.2} />
-            <span className="hidden xs:inline">Ke Beranda</span>
+            <span className="hidden xs:inline">Beranda</span>
           </Link>
           <button
             type="button"
-            onClick={() => setMobileDrawerOpen((prev) => !prev)}
-            aria-label="Toggle menu"
-            className="neu-btn-glass flex size-8.5 items-center justify-center rounded-full text-ink hover:text-accent active:scale-95 transition-transform"
+            onClick={() => {
+              logoutUser();
+              window.location.href = "/";
+            }}
+            title="Keluar dari akun"
+            className="neu-btn-glass flex size-8.5 items-center justify-center rounded-full text-ink-tertiary hover:text-rose-500 hover:border-rose-200 active:scale-95 transition-all cursor-pointer"
           >
-            {mobileDrawerOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
+            <LogOut className="size-3.5" />
           </button>
         </div>
       </header>
-
-      {/* Mobile Drawer Menu Panel for Dashboard */}
-      {mobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-[53px] z-30 bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="rounded-2xl border border-white/90 bg-white/95 p-4 shadow-2xl backdrop-blur-2xl space-y-3">
-            {/* User Profile Summary */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/70 border border-hairline">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {displayUser.role?.toLowerCase().includes("super") ? (
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-purple-600 text-white shadow-xs">
-                    <Crown className="size-4.5" />
-                  </span>
-                ) : (
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
-                    {displayUser.name.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="truncate text-[13px] font-bold text-ink">{displayUser.name}</p>
-                    {displayUser.role?.toLowerCase().includes("super") && (
-                      <span className="rounded-full bg-purple-100 px-1.5 py-0.2 text-[9px] font-extrabold text-purple-700">
-                        ROOT
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-[11px] text-ink-tertiary capitalize">
-                    {displayUser.role?.toLowerCase().includes("super") ? "Super Admin" : displayUser.role}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  logoutUser();
-                  window.location.href = "/";
-                }}
-                className="neu-btn-glass px-2.5 py-1 text-[11px] font-semibold text-rose-500 flex items-center gap-1"
-              >
-                <LogOut className="size-3" />
-                Keluar
-              </button>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="space-y-1">
-              {nav.map((item) => {
-                const isActive = item.exact
-                  ? location.pathname === item.to
-                  : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => setMobileDrawerOpen(false)}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all ${
-                      isActive
-                        ? "bg-accent/10 text-accent font-bold"
-                        : "text-ink hover:bg-slate-100/70"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <item.icon className="size-4" strokeWidth={isActive ? 2.3 : 1.8} />
-                      <span>{item.label}</span>
-                    </div>
-                    <ChevronRight className="size-4 text-ink-quaternary" />
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Switch Role Link */}
-            <div className="border-t border-slate-200/80 pt-2">
-              <Link
-                to={role === "admin" ? "/dashboard" : "/admin"}
-                onClick={() => setMobileDrawerOpen(false)}
-                className="neu-btn-glass flex items-center justify-center gap-2 w-full py-2.5 text-[12.5px] font-semibold text-ink-secondary hover:text-accent rounded-xl"
-              >
-                <span>Beralih ke {role === "admin" ? "Dashboard Peserta" : "Panel Speaker"}</span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6">
         <aside className="glass sticky top-6 hidden h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-xl p-4 lg:flex">
@@ -240,12 +149,14 @@ export function DashboardShell({
           </nav>
 
           <div className="mt-auto">
-            <Link
-              to={role === "admin" ? "/dashboard" : "/admin"}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-tertiary hover:text-accent"
-            >
-              Beralih ke {role === "admin" ? "dashboard peserta" : "panel speaker"}
-            </Link>
+            {Boolean(displayUser.role?.toLowerCase().includes("super")) && (
+              <Link
+                to={role === "admin" ? "/dashboard" : "/admin"}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-tertiary hover:text-accent"
+              >
+                Beralih ke {role === "admin" ? "dashboard peserta" : "panel speaker"}
+              </Link>
+            )}
             <div className={`mt-2 flex items-center justify-between gap-2 rounded-xl p-2.5 shadow-xs border transition-all ${
               displayUser.role?.toLowerCase().includes("super")
                 ? "bg-purple-50/70 border-purple-200/80"

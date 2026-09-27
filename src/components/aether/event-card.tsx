@@ -5,8 +5,8 @@ import { formatPrice, formatShortDate, formatTime, type EventItem } from "@/lib/
 import { useApp } from "@/lib/store";
 
 export function EventCard({ event }: { event: EventItem }) {
-  const { isRegistered } = useApp();
-  const registered = isRegistered(event.id);
+  const { isRegistered, currentUser } = useApp();
+  const registered = Boolean(currentUser && isRegistered(event.id));
 
   return (
     <Link

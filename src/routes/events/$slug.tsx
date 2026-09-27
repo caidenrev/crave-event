@@ -40,7 +40,7 @@ export const Route = createFileRoute("/events/$slug")({
 function EventDetailPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
-  const { events, registerEvent, payEvent, isRegistered, isPaid } = useApp();
+  const { events, registerEvent, payEvent, isRegistered, isPaid, currentUser } = useApp();
 
   const event = events.find((e) => e.slug === slug || e.id === slug);
   const [showPayment, setShowPayment] = useState(false);
@@ -63,15 +63,24 @@ function EventDetailPage() {
     );
   }
 
-  const registered = isRegistered(event.id);
-  const paid = isPaid(event.id);
-  const canAccessZoom = registered && (event.type === "free" || paid);
+  const registered = Boolean(currentUser && isRegistered(event.id));
+  const paid = Boolean(currentUser && isPaid(event.id));
+  const canAccessZoom = Boolean(currentUser && registered && (event.type === "free" || paid));
 
   const relatedEvents = events
     .filter((e) => e.id !== event.id && e.playlist === event.playlist)
     .slice(0, 3);
 
   const handleRegisterFree = () => {
+    if (!currentUser) {
+      toast.info("Silakan masuk atau daftar akun terlebih dahulu untuk mendaftar event.");
+      navigate({
+        to: "/auth",
+        search: { mode: "login", redirect: `/events/${event.slug}` },
+      });
+      return;
+    }
+
     registerEvent(event.id, true);
     toast.success("Pendaftaran Berhasil!", {
       description: `Kamu telah terdaftar di ${event.title}. Akses link Zoom & tiket telah aktif di Dashboard.`,
@@ -83,6 +92,15 @@ function EventDetailPage() {
   };
 
   const handlePaymentSuccess = () => {
+    if (!currentUser) {
+      toast.info("Silakan masuk atau daftar akun terlebih dahulu.");
+      navigate({
+        to: "/auth",
+        search: { mode: "login", redirect: `/events/${event.slug}` },
+      });
+      return;
+    }
+
     if (!registered) {
       registerEvent(event.id, true);
     } else {
@@ -397,7 +415,28 @@ function EventDetailPage() {
 
               {/* Action Buttons depending on status */}
               <div className="mt-6 space-y-3">
-                {canAccessZoom ? (
+                {!currentUser ? (
+                  <div className="space-y-3 rounded-2xl border border-accent/20 bg-accent-tint/30 p-4 text-center">
+                    <p className="text-[13px] font-bold text-ink">
+                      Masuk untuk Mendaftar Event
+                    </p>
+                    <p className="text-[11.5px] text-ink-secondary leading-relaxed">
+                      Kamu harus memiliki akun peserta terlebih dahulu agar tiket, sertifikat, dan presensi tersimpan di akunmu.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        toast.info("Silakan masuk atau buat akun peserta terlebih dahulu.");
+                        navigate({
+                          to: "/auth",
+                          search: { mode: "login", redirect: `/events/${event.slug}` },
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      Masuk / Daftar Akun
+                    </Button>
+                  </div>
+                ) : canAccessZoom ? (
                   <div className="neu-stat-card space-y-3.5 p-5 rounded-2xl border border-white/90 bg-white/80 backdrop-blur-xl">
                     <div className="flex items-center gap-2.5">
                       <span className="neu-icon-sphere size-7.5 shrink-0">

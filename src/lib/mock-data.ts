@@ -260,31 +260,7 @@ export const events: EventItem[] = [
   },
 ];
 
-export const myEvents: MyEvent[] = [
-  { eventId: "ev-1", registeredAt: "2026-09-20", paid: true, attended: false, certificateId: null },
-  { eventId: "ev-2", registeredAt: "2026-09-22", paid: true, attended: false, certificateId: null },
-  {
-    eventId: "ev-4",
-    registeredAt: "2026-09-01",
-    paid: true,
-    attended: true,
-    certificateId: "CERT-2026-0413",
-  },
-  {
-    eventId: "ev-5",
-    registeredAt: "2026-08-10",
-    paid: true,
-    attended: true,
-    certificateId: "CERT-2026-0288",
-  },
-  {
-    eventId: "ev-6",
-    registeredAt: "2026-07-02",
-    paid: true,
-    attended: false,
-    certificateId: null,
-  },
-];
+export const myEvents: MyEvent[] = [];
 
 const names = [
   "Aisyah Putri",

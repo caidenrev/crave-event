@@ -7,13 +7,15 @@ import { isSupabaseConfigured } from "../lib/supabase";
 import { authApi } from "../lib/supabase-services";
 
 type AuthSearch = {
-  mode?: "login" | "register";
+  mode?: "login" | "register" | undefined;
+  redirect?: string | undefined;
 };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): AuthSearch => {
     return {
       mode: search["mode"] === "register" ? "register" : "login",
+      ...(typeof search["redirect"] === "string" ? { redirect: search["redirect"] } : {}),
     };
   },
   component: AuthPage,
@@ -84,11 +86,29 @@ function AuthPage() {
           },
         );
 
-        if (isSpeaker || isSuper) {
-          navigate({ to: "/admin" });
-        } else {
-          navigate({ to: "/dashboard" });
-        }
+        const performNavigation = (speakerOrSuper: boolean) => {
+          if (search.redirect && search.redirect.startsWith("/")) {
+            // Guard redirect destination against role
+            if (search.redirect.startsWith("/admin") && !speakerOrSuper) {
+              navigate({ to: "/dashboard" });
+              return;
+            }
+            if (search.redirect.startsWith("/dashboard") && speakerOrSuper) {
+              navigate({ to: "/admin" });
+              return;
+            }
+            navigate({ to: search.redirect as any });
+            return;
+          }
+
+          if (speakerOrSuper) {
+            navigate({ to: "/admin" });
+          } else {
+            navigate({ to: "/dashboard" });
+          }
+        };
+
+        performNavigation(isSpeaker || isSuper);
       } else {
         // Register Mode
         const isSpeaker = selectedRole === "speaker";
@@ -113,10 +133,20 @@ function AuthPage() {
           description: `Akun ${userName} (${roleName}) aktif! Mengalihkan ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}...`,
         });
 
-        if (isSpeaker) {
-          navigate({ to: "/admin" });
+        if (search.redirect && search.redirect.startsWith("/")) {
+          if (search.redirect.startsWith("/admin") && !isSpeaker) {
+            navigate({ to: "/dashboard" });
+          } else if (search.redirect.startsWith("/dashboard") && isSpeaker) {
+            navigate({ to: "/admin" });
+          } else {
+            navigate({ to: search.redirect as any });
+          }
         } else {
-          navigate({ to: "/dashboard" });
+          if (isSpeaker) {
+            navigate({ to: "/admin" });
+          } else {
+            navigate({ to: "/dashboard" });
+          }
         }
       }
     } finally {
@@ -155,10 +185,11 @@ function AuthPage() {
           {/* Mode Switcher Tabs with Sliding Glider */}
           <div className="neu-capsule-track relative flex w-full p-1 border border-hairline/80">
             <span
-              className="neu-capsule-thumb absolute top-1 bottom-1 rounded-pill transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+              className="neu-capsule-thumb absolute top-1 bottom-1 left-1 rounded-pill pointer-events-none"
               style={{
-                left: mode === "login" ? "4px" : "calc(50% + 2px)",
-                width: "calc(50% - 6px)",
+                width: "calc(50% - 4px)",
+                transform: mode === "login" ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+                transition: "transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
             />
             <button
@@ -210,81 +241,52 @@ function AuthPage() {
                   </div>
                 </div>
 
-                {/* Role Selector: Peserta vs Speaker */}
+                {/* Role Selector: Peserta vs Speaker (Capsule Glider Switch) */}
                 <div>
-                  <label className="aether-meta block text-[11px] font-semibold text-ink-tertiary mb-2 ml-1">
+                  <label className="aether-meta block text-[11px] font-semibold text-ink-tertiary mb-1.5 ml-1">
                     Pilih Peran Akun (Menentukan Akses Dashboard)
                   </label>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="neu-capsule-track relative flex w-full p-1 border border-hairline/80">
+                    <span
+                      className="neu-capsule-thumb absolute top-1 bottom-1 left-1 rounded-pill pointer-events-none"
+                      style={{
+                        width: "calc(50% - 4px)",
+                        transform: selectedRole === "user" ? "translate3d(0, 0, 0)" : "translate3d(100%, 0, 0)",
+                        transition: "transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      }}
+                    />
                     <button
                       type="button"
                       onClick={() => setSelectedRole("user")}
-                      className={`relative flex flex-col items-start rounded-2xl p-3 text-left transition-all duration-200 border cursor-pointer ${
-                        selectedRole === "user"
-                          ? "border-accent bg-accent-tint/50 shadow-[0_4px_16px_rgba(10,132,255,0.18)] ring-2 ring-accent"
-                          : "border-hairline/80 bg-white/70 hover:bg-white/95 hover:border-hairline"
+                      className={`relative z-10 flex-1 py-2 text-center text-[13px] font-semibold transition-colors duration-200 select-none flex items-center justify-center gap-2 cursor-pointer ${
+                        selectedRole === "user" ? "text-white" : "text-ink-secondary hover:text-ink"
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1.5 w-full">
-                        <div
-                          className={`size-7 rounded-xl flex items-center justify-center transition-colors ${
-                            selectedRole === "user"
-                              ? "bg-accent text-white shadow-xs"
-                              : "bg-white text-ink-secondary border border-hairline/70"
-                          }`}
-                        >
-                          <User className="size-4" strokeWidth={2.2} />
-                        </div>
-                        <span
-                          className={`text-[12.5px] font-bold ${
-                            selectedRole === "user" ? "text-accent-strong" : "text-ink"
-                          }`}
-                        >
-                          Peserta
-                        </span>
-                      </div>
-                      <p className="text-[10.5px] leading-tight text-ink-secondary">
-                        Ikuti webinar, presensi QR, dan klaim sertifikat belajar.
-                      </p>
-                      <span className="mt-2 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-accent-strong border border-accent/20">
-                        → Dashboard Peserta
-                      </span>
+                      <User className="size-4" strokeWidth={2.2} />
+                      <span>Peserta</span>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => setSelectedRole("speaker")}
-                      className={`relative flex flex-col items-start rounded-2xl p-3 text-left transition-all duration-200 border cursor-pointer ${
-                        selectedRole === "speaker"
-                          ? "border-accent bg-accent-tint/50 shadow-[0_4px_16px_rgba(10,132,255,0.18)] ring-2 ring-accent"
-                          : "border-hairline/80 bg-white/70 hover:bg-white/95 hover:border-hairline"
+                      className={`relative z-10 flex-1 py-2 text-center text-[13px] font-semibold transition-colors duration-200 select-none flex items-center justify-center gap-2 cursor-pointer ${
+                        selectedRole === "speaker" ? "text-white" : "text-ink-secondary hover:text-ink"
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1.5 w-full">
-                        <div
-                          className={`size-7 rounded-xl flex items-center justify-center transition-colors ${
-                            selectedRole === "speaker"
-                              ? "bg-accent text-white shadow-xs"
-                              : "bg-white text-ink-secondary border border-hairline/70"
-                          }`}
-                        >
-                          <Presentation className="size-4" strokeWidth={2.2} />
-                        </div>
-                        <span
-                          className={`text-[12.5px] font-bold ${
-                            selectedRole === "speaker" ? "text-accent-strong" : "text-ink"
-                          }`}
-                        >
-                          Speaker
-                        </span>
-                      </div>
-                      <p className="text-[10.5px] leading-tight text-ink-secondary">
-                        Kelola event, buat rundown, dan tayangkan QR presensi.
-                      </p>
-                      <span className="mt-2 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-accent-strong border border-accent/20">
-                        → Panel Speaker
-                      </span>
+                      <Presentation className="size-4" strokeWidth={2.2} />
+                      <span>Speaker</span>
                     </button>
+                  </div>
+
+                  {/* Contextual description of selected role */}
+                  <div className="mt-2 px-3.5 py-2.5 rounded-2xl bg-white/70 border border-hairline/80 flex items-center justify-between text-[11px] text-ink-secondary shadow-xs transition-all">
+                    <span>
+                      {selectedRole === "user"
+                        ? "Ikuti webinar, presensi QR, dan klaim sertifikat belajar."
+                        : "Kelola event, buat rundown, dan tayangkan QR presensi."}
+                    </span>
+                    <span className="font-semibold text-accent shrink-0 ml-2">
+                      {selectedRole === "user" ? "→ Dashboard Peserta" : "→ Panel Speaker"}
+                    </span>
                   </div>
                 </div>
               </>

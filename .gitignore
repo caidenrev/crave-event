@@ -36,3 +36,9 @@ dist-ssr
 
 schema.sql
 seed.sql
+
+# PaymentGT Private Sessions
+paymentgt/session.json
+*.exe
+paymentgt/*.exe
+paymentgt/

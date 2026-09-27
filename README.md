@@ -43,7 +43,7 @@ Didesain dengan antarmuka modern bernuansa **Aether Glassmorphism**, Crave Event
 - **Eksplorasi Webinar**: Filter berdasarkan playlist, pencarian judul, dan status webinar (Mendatang / Selesai).
 - **Detail Event & Rundown**: Informasi lengkap pembicara, fasilitas, agenda rundown, dan FAQ interaktif.
 - **Checkout & Simulasi Pembayaran**: Alur checkout instan dengan dukungan tiket gratis dan berbayar (simulasi QRIS & Transfer Bank).
-- **Autentikasi Fleksibel**: Login dan registrasi akun dengan peran **Peserta** atau **Speaker / Host**, didukung integrasi Supabase Auth & OAuth.
+- **Autentikasi Fleksibel & RBAC**: Login dan registrasi akun dengan peran **Peserta**, **Speaker / Host**, atau **Super Admin**. Panduan lengkap kredensial akun dan hak akses dapat dilihat di [ACCOUNTS.md](file:///d:/zone-event/ACCOUNTS.md).
 
 ---
 

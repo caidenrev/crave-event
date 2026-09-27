@@ -68,6 +68,11 @@ const STORAGE_KEYS = {
   USER: "aether_current_user_v1",
 };
 
+const getUserRegistrationsKey = (email?: string | null) => {
+  if (!email) return null;
+  return `${STORAGE_KEYS.MY_EVENTS}_${email.trim().toLowerCase()}`;
+};
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<EventItem[]>(() => {
     if (typeof window === "undefined") return initialEvents;
@@ -79,24 +84,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return initialPlaylists;
     const saved = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
     return saved ? JSON.parse(saved) : initialPlaylists;
-  });
-
-  const [myEvents, setMyEvents] = useState<MyEvent[]>(() => {
-    if (typeof window === "undefined") return initialMyEvents;
-    const saved = localStorage.getItem(STORAGE_KEYS.MY_EVENTS);
-    return saved ? JSON.parse(saved) : initialMyEvents;
-  });
-
-  const [attendees, setAttendees] = useState<Attendee[]>(() => {
-    if (typeof window === "undefined") return initialAttendees;
-    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDEES);
-    return saved ? JSON.parse(saved) : initialAttendees;
-  });
-
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
-    if (typeof window === "undefined") return initialBlogPosts;
-    const saved = localStorage.getItem(STORAGE_KEYS.BLOGS);
-    return saved ? JSON.parse(saved) : initialBlogPosts;
   });
 
   const [currentUser, setCurrentUser] = useState<{
@@ -116,17 +103,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  const loginUser = (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | string }) => {
+  const [myEvents, setMyEvents] = useState<MyEvent[]>(() => {
+    if (typeof window === "undefined") return [];
+    // If no user is logged in, unauthenticated users have 0 registered events
+    const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+    // Clean up any legacy unauthenticated mock data stored under the global key
+    try {
+      localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
+    } catch {}
+
+    if (!savedUser) {
+      return [];
+    }
+
+    try {
+      const parsedUser = JSON.parse(savedUser);
+      const userKey = getUserRegistrationsKey(parsedUser?.email);
+      if (userKey) {
+        const savedUserEvents = localStorage.getItem(userKey);
+        if (savedUserEvents) return JSON.parse(savedUserEvents);
+      }
+    } catch {}
+
+    return [];
+  });
+
+  const [attendees, setAttendees] = useState<Attendee[]>(() => {
+    if (typeof window === "undefined") return initialAttendees;
+    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDEES);
+    return saved ? JSON.parse(saved) : initialAttendees;
+  });
+
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
+    if (typeof window === "undefined") return initialBlogPosts;
+    const saved = localStorage.getItem(STORAGE_KEYS.BLOGS);
+    return saved ? JSON.parse(saved) : initialBlogPosts;
+  });
+
+  const loginUser = (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | "Super Admin" | string }) => {
     setCurrentUser(user);
     try {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      const userKey = getUserRegistrationsKey(user.email);
+      if (userKey) {
+        const savedUserEvents = localStorage.getItem(userKey);
+        setMyEvents(savedUserEvents ? JSON.parse(savedUserEvents) : []);
+      }
     } catch {}
   };
 
   const logoutUser = () => {
     setCurrentUser(null);
+    setMyEvents([]);
     try {
       localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
     } catch {}
   };
 
@@ -144,9 +175,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.MY_EVENTS, JSON.stringify(myEvents));
+      if (currentUser?.email) {
+        const userKey = getUserRegistrationsKey(currentUser.email);
+        if (userKey) {
+          localStorage.setItem(userKey, JSON.stringify(myEvents));
+        }
+      }
     } catch {}
-  }, [myEvents]);
+  }, [myEvents, currentUser]);
 
   useEffect(() => {
     try {
@@ -183,20 +219,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isRegistered = (eventId: string) => {
+    if (!currentUser) return false;
     return myEvents.some((me) => me.eventId === eventId);
   };
 
   const isPaid = (eventId: string) => {
+    if (!currentUser) return false;
     const reg = myEvents.find((me) => me.eventId === eventId);
     return !!reg?.paid;
   };
 
   const hasAttended = (eventId: string) => {
+    if (!currentUser) return false;
     const reg = myEvents.find((me) => me.eventId === eventId);
     return !!reg?.attended;
   };
 
   const registerEvent = (eventId: string, paid = false) => {
+    if (!currentUser) return;
     if (isRegistered(eventId)) return;
 
     const newMyEvent: MyEvent = {
@@ -234,6 +274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const payEvent = (eventId: string) => {
+    if (!currentUser) return;
     setMyEvents((prev) =>
       prev.map((me) => (me.eventId === eventId ? { ...me, paid: true } : me)),
     );
@@ -250,6 +291,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const checkInAttendance = (eventId: string, code?: string) => {
+    if (!currentUser) {
+      return { success: false, message: "Silakan masuk terlebih dahulu untuk melakukan presensi." };
+    }
     const targetEvent = events.find((e) => e.id === eventId || e.slug === eventId);
     if (!targetEvent) {
       return { success: false, message: "Event tidak ditemukan." };
@@ -376,7 +420,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = Boolean(
     currentUser?.role?.toLowerCase().includes("super") ||
-    currentUser?.email?.toLowerCase().includes("superadmin")
+    currentUser?.email?.toLowerCase().includes("superadmin") ||
+    currentUser?.email?.toLowerCase().includes("root")
   );
 
   const deleteAllEvents = () => {
@@ -451,13 +496,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEvents(initialEvents);
     setBlogPosts(initialBlogPosts);
     setAttendees(initialAttendees);
-    setMyEvents(initialMyEvents);
+    setMyEvents([]);
     setPlaylists(initialPlaylists);
     try {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(initialEvents));
       localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(initialBlogPosts));
       localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(initialAttendees));
-      localStorage.setItem(STORAGE_KEYS.MY_EVENTS, JSON.stringify(initialMyEvents));
+      localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
+      if (currentUser?.email) {
+        const userKey = getUserRegistrationsKey(currentUser.email);
+        if (userKey) localStorage.removeItem(userKey);
+      }
       localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(initialPlaylists));
     } catch {}
   };
