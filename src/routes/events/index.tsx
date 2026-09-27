@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Filter, Sparkles, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { EventCard } from "../../components/aether/event-card";
 import { Badge, Button, FilterTabs, SearchInput } from "../../components/aether/primitives";

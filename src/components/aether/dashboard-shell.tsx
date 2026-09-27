@@ -11,7 +11,6 @@ import {
   Newspaper,
   QrCode,
   Settings,
-  Sparkles,
   Ticket,
   Users,
   LogOut,

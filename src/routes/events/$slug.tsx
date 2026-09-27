@@ -13,7 +13,7 @@ import {
   MapPin,
   Share2,
   ShieldCheck,
-  Sparkles,
+  BookOpen,
   Users,
   Video,
 } from "lucide-react";
@@ -457,7 +457,7 @@ function EventDetailPage() {
                   <span>Jaminan verifikasi absensi &amp; sertifikat instan</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-accent" />
+                  <BookOpen className="size-4 text-accent" />
                   <span>Materi kurasi praktisi native speaker</span>
                 </div>
               </div>

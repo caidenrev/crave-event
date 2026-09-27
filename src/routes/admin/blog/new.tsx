@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, FileText, Plus, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Plus, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "../../../components/aether/dashboard-shell";
@@ -241,7 +241,7 @@ function AdminNewBlogPage() {
             Batal
           </ButtonLink>
           <Button type="submit" variant="primary" size="md" className="gap-2">
-            <Sparkles className="size-4" />
+            <Send className="size-4" />
             {status === "published" ? "Terbitkan Artikel Sekarang" : "Simpan Draf Artikel"}
           </Button>
         </div>

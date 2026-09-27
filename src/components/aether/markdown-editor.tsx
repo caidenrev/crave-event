@@ -15,7 +15,6 @@ import {
   Minimize2,
   Minus,
   Quote,
-  Sparkles,
   Split,
   Type,
 } from "lucide-react";
@@ -282,7 +281,7 @@ export function MarkdownEditor({
                 <MarkdownRenderer content={value} />
               ) : (
                 <div className="flex h-full min-h-[160px] flex-col items-center justify-center text-center text-ink-tertiary">
-                  <Sparkles className="size-6 text-accent/40 mb-2" />
+                  <Eye className="size-6 text-accent/40 mb-2" />
                   <p className="text-[13px]">Pratinjau artikel atau materi akan tampil rapi di sini.</p>
                 </div>
               )}

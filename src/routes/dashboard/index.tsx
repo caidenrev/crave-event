@@ -8,7 +8,6 @@ import {
   GraduationCap,
   PlayCircle,
   QrCode,
-  Sparkles,
   Ticket,
   Video,
 } from "lucide-react";

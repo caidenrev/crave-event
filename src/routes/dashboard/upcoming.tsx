@@ -7,7 +7,6 @@ import {
   ExternalLink,
   MapPin,
   Share2,
-  Sparkles,
   Ticket,
   Video,
 } from "lucide-react";

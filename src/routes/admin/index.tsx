@@ -5,7 +5,6 @@ import {
   DollarSign,
   Plus,
   QrCode,
-  Sparkles,
   Ticket,
   TrendingUp,
   Users,

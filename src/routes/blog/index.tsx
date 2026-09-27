@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Clock, Newspaper, Sparkles } from "lucide-react";
+import { Clock, Newspaper } from "lucide-react";
 import { useState } from "react";
 import { Badge, SearchInput } from "../../components/aether/primitives";
 import { SiteFooter, SiteHeader } from "../../components/aether/site-header";

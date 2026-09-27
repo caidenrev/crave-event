@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Bookmark, Clock, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, Bookmark, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "../../components/aether/markdown-renderer";
 import { Badge, ButtonLink } from "../../components/aether/primitives";

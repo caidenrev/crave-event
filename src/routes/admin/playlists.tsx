@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Folder, ListMusic, Plus, Sparkles, X } from "lucide-react";
+import { Folder, ListMusic, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "../../components/aether/dashboard-shell";

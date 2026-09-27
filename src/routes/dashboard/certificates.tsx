@@ -7,7 +7,6 @@ import {
   Eye,
   FileBadge,
   Share2,
-  Sparkles,
   X,
 } from "lucide-react";
 import { useState } from "react";

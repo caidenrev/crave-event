@@ -9,7 +9,6 @@ import {
   Globe,
   Layers,
   ArrowRight,
-  Sparkles,
   Zap,
   ShieldCheck,
   Github,

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Lock, Mail, Presentation, Sparkles, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, Mail, Presentation, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useApp } from "../lib/store";
@@ -344,7 +344,7 @@ function AuthPage() {
               disabled={loading}
               className="neu-btn-blue w-full py-3.5 rounded-2xl text-[14px] font-semibold text-white shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-75 transition-all"
             >
-              <Sparkles className="size-4 text-white" />
+              <ArrowRight className="size-4 text-white" />
               <span>
                 {loading
                   ? "Menyiapkan Akun..."

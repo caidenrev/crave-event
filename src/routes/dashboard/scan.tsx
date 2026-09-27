@@ -9,7 +9,7 @@ import {
   QrCode,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  Copy,
   Upload,
   Video,
   Zap,
@@ -617,7 +617,7 @@ function DashboardScanPage() {
                   className="text-[12px] font-mono font-bold text-accent hover:underline flex items-center gap-1"
                 >
                   {selectedEvent.attendanceCode}
-                  <Sparkles className="size-3" />
+                  <Copy className="size-3" />
                 </button>
               </div>
             )}
@@ -628,8 +628,8 @@ function DashboardScanPage() {
                 Presensi tervalidasi 1 kali per akun
               </p>
               <p className="flex items-center gap-1.5">
-                <Sparkles className="size-4 text-accent" />
-                Sertifikat langsung terbit & dapat diverifikasi
+                <FileBadge className="size-4 text-accent" />
+                Sertifikat langsung terbit &amp; dapat diverifikasi
               </p>
             </div>
           </div>

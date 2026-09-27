@@ -8,7 +8,6 @@ import {
   Layers,
   QrCode,
   ShieldCheck,
-  Sparkles,
   Users,
   Video,
   LayoutDashboard,
