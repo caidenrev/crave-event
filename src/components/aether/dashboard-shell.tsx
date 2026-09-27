@@ -15,6 +15,9 @@ import {
   Ticket,
   Users,
   LogOut,
+  Menu,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { useApp } from "../../lib/store";
@@ -54,7 +57,14 @@ export function DashboardShell({
   children?: ReactNode;
 }) {
   const { logoutUser } = useApp();
+  const location = useLocation();
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const nav = role === "admin" ? adminNav : userNav;
+
+  // Auto close mobile drawer on route change
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [location.pathname]);
 
   const displayUser = user || {
     name: role === "admin" ? "Eka Revandi" : "Peserta",
@@ -64,7 +74,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Mobile Top Bar with Home Shortcut */}
+      {/* Mobile Top Bar with Home Shortcut & Hamburger Menu */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-hairline/80 bg-white/85 px-4 py-2.5 backdrop-blur-xl lg:hidden">
         <Link to="/" className="flex items-center gap-2 select-none group">
           <img
@@ -74,14 +84,94 @@ export function DashboardShell({
           />
           <span className="text-[14.5px] font-bold text-ink">Crave Event</span>
         </Link>
-        <Link
-          to="/"
-          className="neu-btn-glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-ink-secondary hover:text-accent shadow-xs active:scale-95 transition-all"
-        >
-          <Home className="size-3.5 text-accent" strokeWidth={2.2} />
-          <span>Ke Beranda</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="neu-btn-glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-ink-secondary hover:text-accent shadow-xs active:scale-95 transition-all"
+          >
+            <Home className="size-3.5 text-accent" strokeWidth={2.2} />
+            <span className="hidden xs:inline">Ke Beranda</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileDrawerOpen((prev) => !prev)}
+            aria-label="Toggle menu"
+            className="neu-btn-glass flex size-8.5 items-center justify-center rounded-full text-ink hover:text-accent active:scale-95 transition-transform"
+          >
+            {mobileDrawerOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
+          </button>
+        </div>
       </header>
+
+      {/* Mobile Drawer Menu Panel for Dashboard */}
+      {mobileDrawerOpen && (
+        <div className="lg:hidden fixed inset-x-0 top-[53px] z-30 bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="rounded-2xl border border-white/90 bg-white/95 p-4 shadow-2xl backdrop-blur-2xl space-y-3">
+            {/* User Profile Summary */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/70 border border-hairline">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent-tint text-[12px] font-bold text-accent-strong">
+                  {displayUser.name.slice(0, 2).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-bold text-ink">{displayUser.name}</p>
+                  <p className="truncate text-[11px] text-ink-tertiary capitalize">{displayUser.role}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  logoutUser();
+                  window.location.href = "/";
+                }}
+                className="neu-btn-glass px-2.5 py-1 text-[11px] font-semibold text-rose-500 flex items-center gap-1"
+              >
+                <LogOut className="size-3" />
+                Keluar
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="space-y-1">
+              {nav.map((item) => {
+                const isActive = item.exact
+                  ? location.pathname === item.to
+                  : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileDrawerOpen(false)}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all ${
+                      isActive
+                        ? "bg-accent/10 text-accent font-bold"
+                        : "text-ink hover:bg-slate-100/70"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <item.icon className="size-4" strokeWidth={isActive ? 2.3 : 1.8} />
+                      <span>{item.label}</span>
+                    </div>
+                    <ChevronRight className="size-4 text-ink-quaternary" />
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Switch Role Link */}
+            <div className="border-t border-slate-200/80 pt-2">
+              <Link
+                to={role === "admin" ? "/dashboard" : "/admin"}
+                onClick={() => setMobileDrawerOpen(false)}
+                className="neu-btn-glass flex items-center justify-center gap-2 w-full py-2.5 text-[12.5px] font-semibold text-ink-secondary hover:text-accent rounded-xl"
+              >
+                <span>Beralih ke {role === "admin" ? "Dashboard Peserta" : "Panel Speaker"}</span>
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6">
         <aside className="glass sticky top-6 hidden h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-xl p-4 lg:flex">

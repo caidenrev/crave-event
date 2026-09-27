@@ -3,6 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useApp } from "../../lib/store";
 import {
   ChevronDown,
+  ChevronRight,
   Calendar,
   Code2,
   Globe,
@@ -17,6 +18,11 @@ import {
   Mail,
   LayoutDashboard,
   LogOut,
+  Menu,
+  X,
+  Home,
+  BookOpen,
+  LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -228,7 +234,10 @@ function DesktopNavGlider({
 
 export function SiteHeader() {
   const { currentUser, logoutUser } = useApp();
+  const location = useLocation();
   const [isDesktopEventOpen, setIsDesktopEventOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileEventOpen, setIsMobileEventOpen] = useState(false);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!currentUser;
@@ -238,6 +247,13 @@ export function SiteHeader() {
     currentUser?.role?.toLowerCase().includes("host");
   const dashboardTarget = isSpeaker ? "/admin" : "/dashboard";
   const dashboardLabel = isSpeaker ? "Panel Speaker" : "Dashboard";
+
+  // Auto-close menus on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsDesktopEventOpen(false);
+    setIsMobileEventOpen(false);
+  }, [location.pathname]);
 
   // Close desktop dropdown on outside click
   useEffect(() => {
@@ -253,6 +269,8 @@ export function SiteHeader() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsDesktopEventOpen(false);
+        setIsMobileMenuOpen(false);
+        setIsMobileEventOpen(false);
       }
     }
 
@@ -266,6 +284,8 @@ export function SiteHeader() {
 
   const closeAllMenus = () => {
     setIsDesktopEventOpen(false);
+    setIsMobileMenuOpen(false);
+    setIsMobileEventOpen(false);
   };
 
   const eventCategories = [
@@ -300,90 +320,264 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 px-4 pt-4">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-pill px-4 py-2 border border-white/80 bg-white/70 backdrop-blur-xl shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff]">
-        {/* Left Side: Brand Logo */}
-        <div className="flex items-center min-w-0 flex-1 justify-start">
-          <Link
-            to="/"
-            onClick={closeAllMenus}
-            className="flex items-center gap-2.5 px-2 py-1 select-none group"
-          >
-            <img
-              src="/logo.png"
-              alt="Crave Event Logo"
-              className="size-8 object-contain transition-transform duration-200 group-hover:scale-105"
+    <header className="sticky top-0 z-50 px-4 pt-3 sm:pt-4">
+      {/* Unified Expandable Capsule Navbar */}
+      <nav
+        className={`mx-auto max-w-6xl rounded-[26px] border border-white/80 bg-white/70 backdrop-blur-xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.08),0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_2px_#ffffff] transition-[box-shadow] duration-200 overflow-hidden ${
+          isMobileMenuOpen ? "shadow-2xl bg-white/95" : ""
+        }`}
+      >
+        {/* Top Navbar Row */}
+        <div className="flex items-center justify-between w-full">
+          {/* Left Side: Brand Logo */}
+          <div className="flex items-center min-w-0 flex-1 justify-start">
+            <Link
+              to="/"
+              onClick={closeAllMenus}
+              className="flex items-center gap-2.5 px-1 py-1 select-none group"
+            >
+              <img
+                src="/logo.png"
+                alt="Crave Event Logo"
+                className="size-8 object-contain transition-transform duration-200 group-hover:scale-105"
+              />
+              <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-ink">
+                Crave Event
+              </span>
+            </Link>
+          </div>
+
+          {/* Center: Desktop Navigation Links with Animated Glider Switch */}
+          <div className="hidden md:flex items-center justify-center flex-shrink-0">
+            <DesktopNavGlider
+              isDesktopEventOpen={isDesktopEventOpen}
+              setIsDesktopEventOpen={setIsDesktopEventOpen}
+              desktopDropdownRef={desktopDropdownRef}
+              eventCategories={eventCategories}
+              closeAllMenus={closeAllMenus}
             />
-            <span className="text-[15px] font-bold tracking-tight text-ink">
-              Crave Event
-            </span>
-          </Link>
+          </div>
+
+          {/* Right Side: Actions */}
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to={dashboardTarget}
+                  onClick={closeAllMenus}
+                  className="neu-btn-blue px-3.5 sm:px-4 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-white flex items-center gap-1.5 shadow-sm hover:shadow transition-all"
+                >
+                  <LayoutDashboard className="size-3.5" />
+                  <span>{dashboardLabel}</span>
+                </Link>
+                <div className="hidden sm:flex items-center gap-1.5 pl-1.5 border-l border-slate-200/90">
+                  <span
+                    className="hidden md:inline-block text-[12px] font-semibold text-ink max-w-[85px] truncate"
+                    title={currentUser?.name}
+                  >
+                    {currentUser?.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutUser();
+                      toast.info("Anda telah keluar dari akun.");
+                    }}
+                    title="Keluar dari akun"
+                    className="neu-btn-glass px-2.5 py-1 text-[11.5px] font-semibold text-ink-tertiary hover:text-rose-500 hover:border-rose-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="size-3" />
+                    <span className="hidden sm:inline">Keluar</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Link
+                  to="/auth"
+                  search={{ mode: "login" }}
+                  onClick={closeAllMenus}
+                  className="neu-btn-glass px-3.5 sm:px-4 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-ink-secondary hover:text-accent transition-all"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "register" }}
+                  onClick={closeAllMenus}
+                  className="neu-btn-blue px-4 sm:px-5 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-white shadow-sm hover:shadow transition-all"
+                >
+                  Daftar
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile Hamburger Menu Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu navigasi"}
+              className="md:hidden neu-btn-glass flex size-8.5 items-center justify-center rounded-full text-ink hover:text-accent active:scale-95 transition-transform cursor-pointer"
+            >
+              {isMobileMenuOpen ? (
+                <X className="size-4.5 text-accent-strong" />
+              ) : (
+                <Menu className="size-4.5" />
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Center: Desktop Navigation Links with Animated Glider Switch */}
-        <div className="hidden md:flex items-center justify-center flex-shrink-0">
-          <DesktopNavGlider
-            isDesktopEventOpen={isDesktopEventOpen}
-            setIsDesktopEventOpen={setIsDesktopEventOpen}
-            desktopDropdownRef={desktopDropdownRef}
-            eventCategories={eventCategories}
-            closeAllMenus={closeAllMenus}
-          />
-        </div>
+        {/* Mobile Expanding Drawer - Seamlessly Attached & Unfolding from within the Capsule */}
+        <div
+          className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden ${
+            isMobileMenuOpen
+              ? "grid-rows-[1fr] opacity-100 mt-3 pt-3 pb-1 border-t border-hairline/80"
+              : "grid-rows-[0fr] opacity-0 mt-0 pt-0 pb-0 border-t-0 border-transparent pointer-events-none"
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden space-y-1.5 px-0.5">
+            {/* Beranda */}
+            <Link
+              to="/"
+              onClick={closeAllMenus}
+              activeOptions={{ exact: true }}
+              className={`flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
+                location.pathname === "/"
+                  ? "bg-accent-tint text-accent-strong font-bold"
+                  : "text-ink hover:bg-slate-50/80"
+              }`}
+            >
+              <div className="neu-icon-sphere size-8 shrink-0">
+                <Home className="size-4 text-white" strokeWidth={2.2} />
+              </div>
+              <span>Beranda</span>
+            </Link>
 
-        {/* Right Side: Actions */}
-        <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
-          {isLoggedIn ? (
-            <>
+            {/* Event Dropdown Accordion */}
+            <div className="rounded-2xl border border-hairline/80 bg-slate-50/60 overflow-hidden transition-colors">
+              <button
+                type="button"
+                onClick={() => setIsMobileEventOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between px-3.5 py-2.5 text-[14px] font-medium text-ink hover:bg-white transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="neu-icon-sphere size-8 shrink-0">
+                    <Calendar className="size-4 text-white" strokeWidth={2.2} />
+                  </div>
+                  <span>Event &amp; Webinar</span>
+                </div>
+                <ChevronDown
+                  className={`size-4 text-ink-tertiary transition-transform duration-200 ${
+                    isMobileEventOpen ? "rotate-180 text-accent-strong" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Submenu for Event */}
+              {isMobileEventOpen && (
+                <div className="px-3 pb-2.5 pt-1 space-y-1 border-t border-hairline/60 bg-white">
+                  {eventCategories.map((cat, idx) => {
+                    const Icon = cat.icon;
+                    return (
+                      <Link
+                        key={idx}
+                        to={cat.to}
+                        onClick={closeAllMenus}
+                        className="flex items-center justify-between rounded-xl px-2.5 py-2 text-[13px] text-ink-secondary hover:text-accent hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="neu-icon-sphere size-7 shrink-0">
+                            <Icon className="size-3.5 text-white" strokeWidth={2.2} />
+                          </div>
+                          <span className="font-medium text-ink">{cat.title}</span>
+                        </div>
+                        <span className="text-[10px] rounded-pill bg-accent-tint/60 px-2 py-0.5 font-bold text-accent-strong">
+                          {cat.badge}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Blog */}
+            <Link
+              to="/blog"
+              onClick={closeAllMenus}
+              className={`flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
+                location.pathname.startsWith("/blog")
+                  ? "bg-accent-tint text-accent-strong font-bold"
+                  : "text-ink hover:bg-slate-50/80"
+              }`}
+            >
+              <div className="neu-icon-sphere size-8 shrink-0">
+                <BookOpen className="size-4 text-white" strokeWidth={2.2} />
+              </div>
+              <span>Blog &amp; Artikel</span>
+            </Link>
+
+            {/* Dashboard Link (if logged in) */}
+            {isLoggedIn && (
               <Link
                 to={dashboardTarget}
                 onClick={closeAllMenus}
-                className="neu-btn-blue px-3.5 sm:px-4 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-white flex items-center gap-1.5 shadow-sm hover:shadow transition-all"
+                className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[14px] font-medium text-ink hover:bg-slate-50/80 transition-colors"
               >
-                <LayoutDashboard className="size-3.5" />
+                <div className="neu-icon-sphere size-8 shrink-0">
+                  <LayoutDashboard className="size-4 text-white" strokeWidth={2.2} />
+                </div>
                 <span>{dashboardLabel}</span>
               </Link>
-              <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200/90">
-                <span
-                  className="hidden md:inline-block text-[12px] font-semibold text-ink max-w-[85px] truncate"
-                  title={currentUser?.name}
-                >
-                  {currentUser?.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logoutUser();
-                    toast.info("Anda telah keluar dari akun.");
-                  }}
-                  title="Keluar dari akun"
-                  className="neu-btn-glass px-2.5 py-1 text-[11.5px] font-semibold text-ink-tertiary hover:text-rose-500 hover:border-rose-200 flex items-center gap-1 transition-colors"
-                >
-                  <LogOut className="size-3" />
-                  <span className="hidden sm:inline">Keluar</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                search={{ mode: "login" }}
-                onClick={closeAllMenus}
-                className="neu-btn-glass px-3.5 sm:px-4 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-ink-secondary hover:text-accent transition-all"
-              >
-                Masuk
-              </Link>
-              <Link
-                to="/auth"
-                search={{ mode: "register" }}
-                onClick={closeAllMenus}
-                className="neu-btn-blue px-4 sm:px-5 py-1.5 text-[12.5px] sm:text-[13px] font-semibold text-white shadow-sm hover:shadow transition-all"
-              >
-                Daftar
-              </Link>
-            </>
-          )}
+            )}
+
+            {/* Bottom Actions inside same capsule */}
+            <div className="border-t border-hairline/80 pt-2.5 mt-2">
+              {isLoggedIn ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <div>
+                      <p className="text-[13px] font-bold text-ink">{currentUser?.name}</p>
+                      <p className="text-[11px] text-ink-tertiary capitalize">{currentUser?.role}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logoutUser();
+                        closeAllMenus();
+                        toast.info("Anda telah keluar dari akun.");
+                      }}
+                      className="neu-btn-glass px-3 py-1.5 text-[11.5px] font-semibold text-rose-500 hover:border-rose-200 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut className="size-3.5" />
+                      Keluar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 pt-1 pb-1">
+                  <Link
+                    to="/auth"
+                    search={{ mode: "login" }}
+                    onClick={closeAllMenus}
+                    className="neu-btn-glass py-2 text-center text-[13px] font-semibold text-ink rounded-xl flex items-center justify-center gap-1.5"
+                  >
+                    <LogIn className="size-3.5 text-accent" />
+                    <span>Masuk</span>
+                  </Link>
+                  <Link
+                    to="/auth"
+                    search={{ mode: "register" }}
+                    onClick={closeAllMenus}
+                    className="neu-btn-blue py-2 text-center text-[13px] font-semibold text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <span>Daftar Akun</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </nav>
     </header>
