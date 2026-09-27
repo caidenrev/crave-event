@@ -1,16 +1,147 @@
-# Event Hub Connect
+# Crave Event 🎟️
+> **Platform Webinar Interaktif, Absensi QR Real-Time & Penerbitan Sertifikat Digital Otomatis**
 
-oke aku mau membuat sebuah web EMS event management system untuk personal use, jadi awal mula nya begini atau case study nya : jadi aku sebagai seorang native speaker yang selalu membuat event online atau webinar merasa pendaftaran event melalui google form sangatlah tidak efisien dan generate sertifikat yang cenderung lambat, belum absensi masuk event yang terbilang masih sangat tidak efisien, jadi aku mau membuat sebuat ems lengkap dengan dashboard nya buat aku dan juga dashboard buat user, jadi aku bisa create event misalnya ingin membuat sebuah webinar di zoom aku create di dashboard dan isi form beberapa kebutuhan untuk create event tersebut seperti thumbnail, link zoom, dan waktu serta deskripsi dan judul event serta lokasi event, nah ketika aku mengcreate event ketika waktu yang telah di tentukan aku bisa generate qr code untuk absensi kehadiran dari user ku dan user bisa scan di app atau sistem ku di dashboard. nah pada saat scan otomatis user tercatat hadir dan bisa claim sertifikat, dan untuk event ini bisa di kategorikan menjadi beberapa playlist seperti playlist #TechTalk #BelajarBareng atau bahkan lain lain nya, dan di dashboard user juga cukup lengkap ya pemantauan event nya atau di side menu nya ada beberapa fitur seperti past event attende dan upcomming event yang bisa di lihat langsung di dashboard (kita juga bisa tau kita udah ikut event apa aja) dan di dashboard admin atau aku jauh lebih lengkap seperti pemantauan jumlah peserta yang hadir ada berapa aja di setiap event atau bahkan keseluruhan event, dan di create event aku bisa pilih kategori event dan jenis event event gratis atau berbayar, dan jika berbayar user di minta untuk melanjutkan pendaftaran dan ada popup payment lalu baru link zoom atau webinar terbuka. di ems ini ga hanya ada event aja tapi ada blog juga untuk aku share tips dari materi di luar atau bahkan di dalam event secara terbuka yang bisa user langsung lihat dan juga baca.
+[![Build Status](https://img.shields.io/badge/Build-Passing-emerald?style=flat-square)](https://github.com/caidenrev/crave-event)
+[![Framework](https://img.shields.io/badge/Framework-React%2019%20%7C%20TanStack%20Start-blue?style=flat-square)](https://tanstack.com/start)
+[![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8?style=flat-square)](https://tailwindcss.com/)
+[![Database](https://img.shields.io/badge/Database-Supabase%20%28PostgreSQL%29-3ecf8e?style=flat-square)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
 
-buat prd dulu lalu kamu buatkan aku design frontend nya aja dengan design.md dan components.md yang ku berikan kepada mu. pastikan design terimplementasi dengan baik dan benar serta semua scope dan prd berjalan dengan baik. untuk backend biarkan aku mengerjakan nya sendiri nanti
+---
 
-## Development
+## 📖 Tentang Crave Event
 
-Prefer working locally? You need Node.js and npm:
+**Crave Event** adalah platform *Event Management System* (EMS) all-in-one yang dirancang untuk mengatasi inefisiensi pendaftaran webinar melalui Google Form, lambatnya pengiriman sertifikat manual, dan rumitnya pencatatan kehadiran peserta webinar.
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+Didesain dengan antarmuka modern bernuansa **Aether Glassmorphism**, Crave Event menyediakan ekosistem terintegrasi baik bagi **Speaker/Host** maupun **Peserta**:
+- **Bagi Host**: Buat webinar berbayar/gratis dalam hitungan detik, tayangkan kode QR presensi interaktif saat share screen di Zoom, kelola peserta secara live, dan publikasikan materi edukasi lewat blog markdown.
+- **Bagi Peserta**: Daftar webinar dengan satu klik, scan absensi langsung lewat kamera ponsel atau webcam browser, dan langsung klaim serta unduh sertifikat resmi terverifikasi saat itu juga.
+
+---
+
+## ✨ Fitur Utama
+
+### 🎙️ 1. Panel Speaker & Host
+- **Manajemen Event Terintegrasi**: Formulir pembuatan webinar dengan upload gambar cover, penentuan harga (Gratis / Berbayar), kuota peserta, jadwal waktu, platform Zoom, dan playlist.
+- **Host Live Presentation Screen**: Modal layar penuh kode QR absensi standar ISO/IEC 18004 beresolusi tinggi + kode 8-digit cadangan yang siap di-share screen saat sesi webinar Zoom berlangsung.
+- **Pelacakan Presensi Real-Time**: Pantau kehadiran peserta yang berhasil melakukan check-in secara live.
+- **Manajemen Peserta & Transaksi**: Filter data pendaftar, status pembayaran, dan kontrol manual check-in kehadiran.
+- **Sistem Playlist & Kurasi**: Pengelompokan event ke dalam topik terstruktur seperti `#TechTalk`, `#BelajarBareng`, `#EnglishClub`, dan `#CareerLab`.
+- **Editor Blog Markdown Terintegrasi**: Tulis dan bagikan ringkasan materi webinar dengan rich markdown editor lengkap dengan live preview, image cover, dan tag kategori.
+
+### 📱 2. Dashboard Peserta
+- **Ringkasan Aktivitas**: Metrik event terdaftar, webinar yang telah selesai diikuti, dan koleksi sertifikat digital.
+- **Upcoming & Riwayat Event**: Detail jadwal webinar dan akses langsung ke tautan Zoom room setelah pendaftaran/pembayaran berhasil.
+- **Multi-Method QR Scanner**:
+  - **Auto Check-in via Kamera Ponsel**: Peserta cukup mengarahkan kamera HP ke QR Code host di layar Zoom, dan sistem langsung mencatat presensi secara otomatis.
+  - **Live Webcam Scanner**: Pemindaian kamera langsung di browser dengan kontrol kamera depan/belakang serta audio beep feedback.
+  - **Upload Foto/Screenshot QR**: Pemindaian dari gambar bagi peserta yang mengikuti webinar di perangkat yang sama.
+  - **Input Kode Manual 8-Digit**: Solusi presensi jika kamera peserta mengalami kendala teknis.
+- **Penerbitan Sertifikat Otomatis**: Sertifikat langsung aktif begitu presensi tervalidasi, lengkap dengan nomor seri kredensial unik (`CERT-2026-xxxx` / `CRV-xxxx`) serta fitur pratinjau dan unduh PDF.
+
+### 🌐 3. Katalog Publik & Autentikasi
+- **Eksplorasi Webinar**: Filter berdasarkan playlist, pencarian judul, dan status webinar (Mendatang / Selesai).
+- **Detail Event & Rundown**: Informasi lengkap pembicara, fasilitas, agenda rundown, dan FAQ interaktif.
+- **Checkout & Simulasi Pembayaran**: Alur checkout instan dengan dukungan tiket gratis dan berbayar (simulasi QRIS & Transfer Bank).
+- **Autentikasi Fleksibel**: Login dan registrasi akun dengan peran **Peserta** atau **Speaker / Host**, didukung integrasi Supabase Auth & OAuth.
+
+---
+
+## 🛠️ Tech Stack & Arsitektur
+
+| Komponen | Teknologi |
+| :--- | :--- |
+| **Framework** | [React 19](https://react.dev/), [TanStack Start](https://tanstack.com/start), [TanStack Router](https://tanstack.com/router) |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) (Strict type-safety) |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/), Radix UI Primitives, Lucide Icons |
+| **QR Engine** | `qrcode` (Generator ISO/IEC 18004 SVG), `jsqr` (Video/canvas frame decoder) |
+| **State & Data** | Context API Store terpadu + Supabase Database Sync |
+| **Backend & Auth**| [Supabase](https://supabase.com/) (PostgreSQL, RLS Policies, Stored Procedures, Auth, Storage) |
+| **Build & SSR** | Vite, Nitro Engine |
+
+---
+
+## 🚀 Memulai (Quick Start)
+
+### Prasyarat
+- **Node.js**: Versi `>= 20.x`
+- **npm** atau **bun**
+
+### 1. Clone Repositori
+```bash
+git clone https://github.com/caidenrev/crave-event.git
+cd crave-event
+```
+
+### 2. Instalasi Dependensi
+```bash
+npm install
+```
+
+### 3. Konfigurasi Environment Variable
+Salin file `.env.example` menjadi `.env`:
+```bash
+cp .env.example .env
+```
+Isi variabel berikut dengan kredensial Supabase Anda:
+```env
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### 4. Setup Database Supabase
+Jalankan query SQL berikut pada Supabase SQL Editor:
+1. `supabase/schema.sql` — Menyiapkan tabel `events`, `registrations`, `certificates`, `profiles`, RLS security, dan RPC presensi otomatis.
+2. `supabase/seed.sql` — Menyiapkan data awal webinar, pembicara, playlist, dan rundown.
+
+### 5. Jalankan Development Server
+```bash
 npm run dev
 ```
+Buka peramban di `http://localhost:8080`.
+
+---
+
+## 📦 Skrip NPM
+
+| Perintah | Deskripsi |
+| :--- | :--- |
+| `npm run dev` | Menjalankan local development server dengan hot module reload |
+| `npm run build` | Melakukan compile dan bundling aplikasi untuk produksi (Client, SSR, Nitro) |
+| `npx tsc --noEmit` | Memeriksa validitas tipe TypeScript di seluruh codebase |
+
+---
+
+## 📁 Struktur Direktori
+
+```plaintext
+zone-event/
+├── public/                 # Aset statis & logo
+├── src/
+│   ├── components/
+│   │   ├── aether/         # Komponen tema Aether (QR Code, Header, EventCard, Markdown, Shell)
+│   │   └── ui/             # Primitives UI (Buttons, Badges, Dialogs, Toaster)
+│   ├── lib/
+│   │   ├── mock-data.ts    # Model tipe data & mock data fallback
+│   │   ├── store.tsx       # Global application state context
+│   │   ├── supabase.ts     # Supabase client initialization
+│   │   └── supabase-services.ts # REST API & RPC service functions
+│   └── routes/             # File-based routing (TanStack Router)
+│       ├── __root.tsx      # Root layout, meta tags & providers
+│       ├── index.tsx       # Landing page utama
+│       ├── auth.tsx        # Login & registrasi akun
+│       ├── events/         # Detail & katalog webinar publik
+│       ├── blog/           # Artikel & insight publik
+│       ├── dashboard/      # Panel peserta (Scan, Sertifikat, Riwayat)
+│       └── admin/          # Panel host/speaker (Kelola Event, Peserta, Blog)
+├── supabase/
+│   ├── schema.sql          # Schema DDL, RLS policies, & stored functions
+│   └── seed.sql            # Initial mock dataset
+└── vite.config.ts          # Konfigurasi bundler Vite & Nitro
+```
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dirilis di bawah lisensi [MIT](LICENSE). Dikembangkan oleh **[Eka Revandi / Caiden](https://github.com/caidenrev)**.
