@@ -338,6 +338,9 @@ function AdminEventsPage() {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
       {/* Super Admin Reset Data Modal */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
