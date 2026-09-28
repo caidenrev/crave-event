@@ -60,6 +60,8 @@ type AppContextType = {
   hasAttended: (eventId: string) => boolean;
 };
 
+const AppContext = createContext<AppContextType | null>(null);
+
 export type RegisteredAccount = {
   email: string;
   name: string;

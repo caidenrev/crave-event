@@ -141,10 +141,10 @@ export const playlistsApi = {
     if (!isSupabaseConfigured) return false;
     const payload: Record<string, any> = {};
 
-    if (updates.title !== undefined) payload.title = updates.title;
-    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.title !== undefined) payload['title'] = updates.title;
+    if (updates.description !== undefined) payload['description'] = updates.description;
     if (updates.tag !== undefined) {
-      payload.slug = updates.tag.replace(/^#/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      payload['slug'] = updates.tag.replace(/^#/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
     }
 
     try {
@@ -253,23 +253,23 @@ export const eventsApi = {
     if (!isSupabaseConfigured) return false;
     const payload: Record<string, any> = {};
 
-    if (updates.title !== undefined) payload.title = updates.title;
-    if (updates.description !== undefined) payload.description = updates.description;
-    if (updates.category !== undefined) payload.category = updates.category;
-    if (updates.playlist !== undefined) payload.playlist = updates.playlist;
-    if (updates.type !== undefined) payload.type = updates.type;
-    if (updates.price !== undefined) payload.price = updates.price;
+    if (updates.title !== undefined) payload['title'] = updates.title;
+    if (updates.description !== undefined) payload['description'] = updates.description;
+    if (updates.category !== undefined) payload['category'] = updates.category;
+    if (updates.playlist !== undefined) payload['playlist'] = updates.playlist;
+    if (updates.type !== undefined) payload['type'] = updates.type;
+    if (updates.price !== undefined) payload['price'] = updates.price;
     if (updates.startsAt) {
       const parts = updates.startsAt.split("T");
-      if (parts[0]) payload.date = parts[0];
-      if (parts[1]) payload.time = parts[1].slice(0, 5);
+      if (parts[0]) payload['date'] = parts[0];
+      if (parts[1]) payload['time'] = parts[1].slice(0, 5);
     }
-    if (updates.location !== undefined) payload.location = updates.location;
-    if (updates.quota !== undefined) payload.quota = updates.quota;
-    if (updates.status !== undefined) payload.status = updates.status;
-    if (updates.zoomLink !== undefined) payload.zoom_link = updates.zoomLink;
-    if (updates.speaker !== undefined) payload.speaker_name = updates.speaker;
-    if (updates.thumbnail !== undefined) payload.banner_url = updates.thumbnail;
+    if (updates.location !== undefined) payload['location'] = updates.location;
+    if (updates.quota !== undefined) payload['quota'] = updates.quota;
+    if (updates.status !== undefined) payload['status'] = updates.status;
+    if (updates.zoomLink !== undefined) payload['zoom_link'] = updates.zoomLink;
+    if (updates.speaker !== undefined) payload['speaker_name'] = updates.speaker;
+    if (updates.thumbnail !== undefined) payload['banner_url'] = updates.thumbnail;
 
     try {
       const { error } = await supabase.from("events").update(payload).eq("id", id);
@@ -376,12 +376,12 @@ export const blogsApi = {
     if (!isSupabaseConfigured) return false;
     const payload: Record<string, any> = {};
 
-    if (updates.title !== undefined) payload.title = updates.title;
-    if (updates.slug !== undefined) payload.slug = updates.slug;
-    if (updates.excerpt !== undefined) payload.excerpt = updates.excerpt;
-    if (updates.cover !== undefined) payload.cover_image = updates.cover;
-    if (updates.status !== undefined) payload.is_published = updates.status === "published";
-    if (updates.readMinutes !== undefined) payload.reading_time = `${updates.readMinutes} min read`;
+    if (updates.title !== undefined) payload['title'] = updates.title;
+    if (updates.slug !== undefined) payload['slug'] = updates.slug;
+    if (updates.excerpt !== undefined) payload['excerpt'] = updates.excerpt;
+    if (updates.cover !== undefined) payload['cover_image'] = updates.cover;
+    if (updates.status !== undefined) payload['is_published'] = updates.status === "published";
+    if (updates.readMinutes !== undefined) payload['reading_time'] = `${updates.readMinutes} min read`;
 
     if (updates.body !== undefined || updates.tag !== undefined) {
       const targetTag = updates.tag || "#TechTalk";
@@ -389,7 +389,7 @@ export const blogsApi = {
         ? updates.body.join("\n\n")
         : (updates.body as any) || updates.excerpt || "";
       const tagHeader = targetTag ? `<!--tag:${targetTag}-->\n\n` : "";
-      payload.content = tagHeader + bodyText;
+      payload['content'] = tagHeader + bodyText;
     }
 
     try {

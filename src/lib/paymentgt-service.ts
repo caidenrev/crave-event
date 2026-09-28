@@ -66,8 +66,8 @@ export async function checkPaymentGTHealth(): Promise<{
       const data: PaymentGTHalthResponse = await res.json();
       return {
         active: true,
-        merchant: data.merchant,
-        storeId: data.store_id,
+        ...(data.merchant !== undefined && { merchant: data.merchant }),
+        ...(data.store_id !== undefined && { storeId: data.store_id }),
       };
     }
   } catch {
