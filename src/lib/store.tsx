@@ -145,93 +145,21 @@ const getUserRegistrationsKey = (email?: string | null) => {
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useState<EventItem[]>(() => {
-    if (isSupabaseConfigured) return [];
-    if (typeof window === "undefined") return initialEvents;
-    const isCleared = localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
-    if (isCleared) return [];
-    const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return initialEvents;
-  });
+  const [events, setEvents] = useState<EventItem[]>([]);
 
-  const [playlists, setPlaylists] = useState<Playlist[]>(() => {
-    if (isSupabaseConfigured) return [];
-    if (typeof window === "undefined") return initialPlaylists;
-    const isCleared = localStorage.getItem(STORAGE_KEYS.PLAYLISTS_CLEARED) === "true";
-    if (isCleared) return [];
-    const saved = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return initialPlaylists;
-  });
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   const [currentUser, setCurrentUser] = useState<{
     name: string;
     email: string;
     role: string;
-  } | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-    const saved = localStorage.getItem(STORAGE_KEYS.USER);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return null;
-  });
+  } | null>(null);
 
-  const [myEvents, setMyEvents] = useState<MyEvent[]>(() => {
-    if (typeof window === "undefined") return [];
-    const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
-    } catch {}
+  const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
 
-    if (!savedUser) {
-      return [];
-    }
+  const [attendees, setAttendees] = useState<Attendee[]>(initialAttendees);
 
-    try {
-      const parsedUser = JSON.parse(savedUser);
-      const userKey = getUserRegistrationsKey(parsedUser?.email);
-      if (userKey) {
-        const savedUserEvents = localStorage.getItem(userKey);
-        if (savedUserEvents) return JSON.parse(savedUserEvents);
-      }
-    } catch {}
-
-    return [];
-  });
-
-  const [attendees, setAttendees] = useState<Attendee[]>(() => {
-    if (typeof window === "undefined") return initialAttendees;
-    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDEES);
-    return saved ? JSON.parse(saved) : initialAttendees;
-  });
-
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
-    if (isSupabaseConfigured) return [];
-    if (typeof window === "undefined") return initialBlogPosts;
-    const isCleared = localStorage.getItem(STORAGE_KEYS.BLOGS_CLEARED) === "true";
-    if (isCleared) return [];
-    const saved = localStorage.getItem(STORAGE_KEYS.BLOGS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return initialBlogPosts;
-  });
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   const loginUser = (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | "Super Admin" | string }) => {
     setCurrentUser(user);
@@ -303,6 +231,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
   }, [blogPosts]);
+
+  // Hydrate from localStorage on client mount
+  useEffect(() => {
+    try {
+      // User
+      const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      let parsedUser = null;
+      if (savedUser) {
+        parsedUser = JSON.parse(savedUser);
+        setCurrentUser(parsedUser);
+      }
+
+      // My Events
+      if (parsedUser) {
+        const userKey = getUserRegistrationsKey(parsedUser.email);
+        if (userKey) {
+          const savedUserEvents = localStorage.getItem(userKey);
+          if (savedUserEvents) setMyEvents(JSON.parse(savedUserEvents));
+        }
+      }
+
+      // Attendees
+      const savedAttendees = localStorage.getItem(STORAGE_KEYS.ATTENDEES);
+      if (savedAttendees) setAttendees(JSON.parse(savedAttendees));
+
+      // Local Fallback for content (Only if Supabase is NOT configured)
+      if (!isSupabaseConfigured) {
+        const isEventsCleared = localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
+        const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
+        setEvents(isEventsCleared ? [] : savedEvents ? JSON.parse(savedEvents) : initialEvents);
+
+        const isPlaylistsCleared = localStorage.getItem(STORAGE_KEYS.PLAYLISTS_CLEARED) === "true";
+        const savedPlaylists = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
+        setPlaylists(isPlaylistsCleared ? [] : savedPlaylists ? JSON.parse(savedPlaylists) : initialPlaylists);
+
+        const isBlogsCleared = localStorage.getItem(STORAGE_KEYS.BLOGS_CLEARED) === "true";
+        const savedBlogs = localStorage.getItem(STORAGE_KEYS.BLOGS);
+        setBlogPosts(isBlogsCleared ? [] : savedBlogs ? JSON.parse(savedBlogs) : initialBlogPosts);
+      }
+    } catch (err) {
+      console.warn("Hydration error:", err);
+    }
+  }, []);
 
   // Initial Sync from Supabase Cloud Database (for Events, Playlists, Blogs & Registrations)
   useEffect(() => {
