@@ -6,6 +6,7 @@ import { PageHeader } from "../../../components/aether/dashboard-shell";
 import { ImageUploader, DEFAULT_PRESET_BANNERS } from "../../../components/aether/image-uploader";
 import { MarkdownEditor } from "../../../components/aether/markdown-editor";
 import { Button, ButtonLink } from "../../../components/aether/primitives";
+import { DeleteConfirmModal } from "../../../components/aether/delete-confirm-modal";
 import { useApp } from "../../../lib/store";
 
 export const Route = createFileRoute("/admin/blog/$id")({
@@ -27,6 +28,7 @@ function AdminEditBlogPage() {
   const [bodyText, setBodyText] = useState(post?.body ? post.body.join("\n\n") : "");
   const [cover, setCover] = useState(post?.cover || DEFAULT_PRESET_BANNERS[0]!.value);
   const [status, setStatus] = useState<"published" | "draft">(post?.status || "published");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (post) {
@@ -79,13 +81,16 @@ function AdminEditBlogPage() {
 
   const handleDelete = () => {
     if (!post) return;
-    if (window.confirm(`Yakin ingin menghapus artikel "${post.title}"?`)) {
-      deleteBlogPost(post.id);
-      toast.success("Artikel Dihapus", {
-        description: `"${post.title}" telah dihapus.`,
-      });
-      navigate({ to: "/admin/blog" });
-    }
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!post) return;
+    deleteBlogPost(post.id);
+    toast.success("Artikel Dihapus", {
+      description: `"${post.title}" telah dihapus.`,
+    });
+    navigate({ to: "/admin/blog" });
   };
 
   if (!post) {
@@ -286,6 +291,19 @@ function AdminEditBlogPage() {
           </Button>
         </div>
       </form>
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        title="Hapus Artikel?"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus artikel{" "}
+            <span className="font-semibold text-gray-900">"{post?.title}"</span>?
+          </>
+        }
+        confirmLabel="Hapus Artikel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }

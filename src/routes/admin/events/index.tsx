@@ -22,6 +22,7 @@ import { Badge, Button, ButtonLink, FilterTabs, SearchInput } from "../../../com
 import { QrMatrix } from "../../../components/aether/qr-code";
 import { formatDate, formatPrice, formatTime, type EventItem } from "../../../lib/mock-data";
 import { useApp } from "../../../lib/store";
+import { DeleteConfirmModal } from "../../../components/aether/delete-confirm-modal";
 
 export const Route = createFileRoute("/admin/events/")({
   component: AdminEventsPage,
@@ -34,6 +35,8 @@ function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [liveQrEvent, setLiveQrEvent] = useState<EventItem | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState<EventItem | null>(null);
+  const [showDeleteAllEventsModal, setShowDeleteAllEventsModal] = useState(false);
 
   const filtered = events.filter((ev) => {
     if (statusFilter !== "all" && ev.status !== statusFilter) return false;
@@ -48,13 +51,17 @@ function AdminEventsPage() {
     return true;
   });
 
-  const handleDelete = (id: string, title: string) => {
-    if (confirm(`Yakin ingin menghapus event "${title}"?`)) {
-      deleteEvent(id);
-      toast.success("Event Berhasil Dihapus", {
-        description: `Event "${title}" telah dihapus dari sistem.`,
-      });
-    }
+  const handleDelete = (ev: EventItem) => {
+    setDeletingEvent(ev);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingEvent) return;
+    deleteEvent(deletingEvent.id);
+    toast.success("Event Berhasil Dihapus", {
+      description: `Event "${deletingEvent.title}" telah dihapus dari sistem.`,
+    });
+    setDeletingEvent(null);
   };
 
   return (
@@ -233,7 +240,7 @@ function AdminEventsPage() {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => handleDelete(item.id, item.title)}
+                        onClick={() => handleDelete(item)}
                         title="Hapus Event"
                         className="rounded-pill p-2 text-danger hover:bg-danger/10 transition-colors"
                       >
@@ -389,15 +396,7 @@ function AdminEventsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm("PERINGATAN: Yakin ingin MENGHAPUS SEMUA EVENT? Semua event webinar akan dihapus permanen.")) {
-                      deleteAllEvents();
-                      setShowResetModal(false);
-                      toast.success("Semua Event Berhasil Dihapus!", {
-                        description: "Database event kini bersih dan kosong.",
-                      });
-                    }
-                  }}
+                  onClick={() => setShowDeleteAllEventsModal(true)}
                   className="neu-btn-glass shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white bg-red-600 hover:bg-red-700 border-none shadow-xs transition-colors cursor-pointer"
                 >
                   Hapus Semua Event
@@ -439,6 +438,44 @@ function AdminEventsPage() {
           </div>
         </div>
       )}
+      {/* Delete single event modal */}
+      <DeleteConfirmModal
+        open={!!deletingEvent}
+        title="Hapus Event?"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus event{" "}
+            <span className="font-semibold text-gray-900">"{deletingEvent?.title}"</span>?
+          </>
+        }
+        confirmLabel="Hapus Event"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingEvent(null)}
+      />
+
+      {/* Delete all events modal */}
+      <DeleteConfirmModal
+        open={showDeleteAllEventsModal}
+        title="Hapus Semua Event?"
+        subtitle="Tindakan ini TIDAK dapat dibatalkan."
+        description={
+          <>
+            Anda akan menghapus{" "}
+            <span className="font-semibold text-gray-900">{events.length} event</span>{" "}
+            secara permanen dari sistem dan Supabase Cloud.
+          </>
+        }
+        confirmLabel="Hapus Semua Event"
+        onConfirm={() => {
+          deleteAllEvents();
+          setShowDeleteAllEventsModal(false);
+          setShowResetModal(false);
+          toast.success("Semua Event Berhasil Dihapus!", {
+            description: "Database event kini bersih dan kosong.",
+          });
+        }}
+        onCancel={() => setShowDeleteAllEventsModal(false)}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { MarkdownEditor } from "../../../components/aether/markdown-editor";
 import { Button, ButtonLink } from "../../../components/aether/primitives";
 import { host } from "../../../lib/mock-data";
 import { useApp } from "../../../lib/store";
+import { DeleteConfirmModal } from "../../../components/aether/delete-confirm-modal";
 
 export const Route = createFileRoute("/admin/events/$id")({
   component: AdminEditEventPage,
@@ -46,6 +47,7 @@ function AdminEditEventPage() {
     event?.thumbnail || DEFAULT_PRESET_BANNERS[0]!.value,
   );
   const [status, setStatus] = useState<"upcoming" | "live" | "past">(event?.status || "upcoming");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (event) {
@@ -118,11 +120,13 @@ function AdminEditEventPage() {
   };
 
   const handleDelete = () => {
-    if (confirm(`Hapus event "${event.title}" secara permanen?`)) {
-      deleteEvent(event.id);
-      toast.success("Event Dihapus.");
-      navigate({ to: "/admin/events" });
-    }
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    deleteEvent(event.id);
+    toast.success("Event Dihapus.");
+    navigate({ to: "/admin/events" });
   };
 
   return (
@@ -393,6 +397,20 @@ function AdminEditEventPage() {
           </ButtonLink>
         </div>
       </form>
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        title="Hapus Event?"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus event{" "}
+            <span className="font-semibold text-gray-900">"{event.title}"</span>{" "}
+            secara permanen?
+          </>
+        }
+        confirmLabel="Hapus Event"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }

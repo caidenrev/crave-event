@@ -19,6 +19,7 @@ import { PageHeader } from "../../../components/aether/dashboard-shell";
 import { Badge, Button, ButtonLink, FilterTabs, SearchInput } from "../../../components/aether/primitives";
 import { formatShortDate, type BlogPost } from "../../../lib/mock-data";
 import { useApp } from "../../../lib/store";
+import { DeleteConfirmModal } from "../../../components/aether/delete-confirm-modal";
 
 export const Route = createFileRoute("/admin/blog/")({
   component: AdminBlogListPage,
@@ -37,6 +38,8 @@ function AdminBlogListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showResetModal, setShowResetModal] = useState(false);
+  const [deletingPost, setDeletingPost] = useState<BlogPost | null>(null);
+  const [showDeleteAllBlogsModal, setShowDeleteAllBlogsModal] = useState(false);
 
   const filtered = blogPosts.filter((post) => {
     if (statusFilter !== "all" && post.status !== statusFilter) return false;
@@ -64,13 +67,17 @@ function AdminBlogListPage() {
     );
   };
 
-  const handleDeletePost = (id: string, postTitle: string) => {
-    if (window.confirm(`Yakin ingin menghapus artikel "${postTitle}"?`)) {
-      deleteBlogPost(id);
-      toast.success("Artikel Dihapus", {
-        description: `"${postTitle}" berhasil dihapus dari sistem.`,
-      });
-    }
+  const handleDeletePost = (post: BlogPost) => {
+    setDeletingPost(post);
+  };
+
+  const handleConfirmDeletePost = () => {
+    if (!deletingPost) return;
+    deleteBlogPost(deletingPost.id);
+    toast.success("Artikel Dihapus", {
+      description: `"${deletingPost.title}" berhasil dihapus dari sistem.`,
+    });
+    setDeletingPost(null);
   };
 
   const filterTabs = [
@@ -249,7 +256,7 @@ function AdminBlogListPage() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleDeletePost(post.id, post.title)}
+                          onClick={() => handleDeletePost(post)}
                           title="Hapus Artikel"
                           className="rounded-pill p-2 text-ink-secondary hover:text-danger hover:bg-red-50 transition-colors cursor-pointer"
                         >
@@ -345,15 +352,7 @@ function AdminBlogListPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm("PERINGATAN: Yakin ingin MENGHAPUS SEMUA ARTIKEL BLOG? Tindakan ini akan mengosongkan seluruh artikel.")) {
-                      deleteAllBlogPosts();
-                      setShowResetModal(false);
-                      toast.success("Semua Artikel Blog Berhasil Dihapus!", {
-                        description: "Kini database blog bersih dan kosong.",
-                      });
-                    }
-                  }}
+                  onClick={() => setShowDeleteAllBlogsModal(true)}
                   className="neu-btn-glass shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white bg-red-600 hover:bg-red-700 border-none shadow-xs transition-colors cursor-pointer"
                 >
                   Hapus Semua Blog
@@ -395,6 +394,44 @@ function AdminBlogListPage() {
           </div>
         </div>
       )}
+      {/* Delete single post modal */}
+      <DeleteConfirmModal
+        open={!!deletingPost}
+        title="Hapus Artikel?"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus artikel{" "}
+            <span className="font-semibold text-gray-900">"{deletingPost?.title}"</span>?
+          </>
+        }
+        confirmLabel="Hapus Artikel"
+        onConfirm={handleConfirmDeletePost}
+        onCancel={() => setDeletingPost(null)}
+      />
+
+      {/* Delete all blogs modal */}
+      <DeleteConfirmModal
+        open={showDeleteAllBlogsModal}
+        title="Hapus Semua Artikel?"
+        subtitle="Tindakan ini TIDAK dapat dibatalkan."
+        description={
+          <>
+            Anda akan menghapus{" "}
+            <span className="font-semibold text-gray-900">{blogPosts.length} artikel</span>{" "}
+            secara permanen dari sistem dan Supabase Cloud.
+          </>
+        }
+        confirmLabel="Hapus Semua Blog"
+        onConfirm={() => {
+          deleteAllBlogPosts();
+          setShowDeleteAllBlogsModal(false);
+          setShowResetModal(false);
+          toast.success("Semua Artikel Blog Berhasil Dihapus!", {
+            description: "Kini database blog bersih dan kosong.",
+          });
+        }}
+        onCancel={() => setShowDeleteAllBlogsModal(false)}
+      />
     </div>
   );
 }
