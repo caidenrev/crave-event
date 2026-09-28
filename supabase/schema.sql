@@ -200,102 +200,84 @@ alter table public.blogs enable row level security;
 
 -- PROFILES POLICIES
 drop policy if exists "Profil dapat dibaca oleh pengguna login" on public.profiles;
-create policy "Profil dapat dibaca oleh pengguna login"
-  on public.profiles for select
-  to authenticated
-  using (true);
-
 drop policy if exists "Pengguna dapat mengedit profil sendiri" on public.profiles;
-create policy "Pengguna dapat mengedit profil sendiri"
-  on public.profiles for update
-  to authenticated
-  using (auth.uid() = id);
+drop policy if exists "Kelola profiles" on public.profiles;
+create policy "Semua orang dapat membaca profil"
+  on public.profiles for select
+  to anon, authenticated
+  using (true);
+create policy "Kelola profiles"
+  on public.profiles for all
+  to anon, authenticated
+  using (true)
+  with check (true);
 
--- PLAYLISTS POLICIES (Publik baca, Admin kelola)
+-- PLAYLISTS POLICIES (Publik baca & kelola via platform Crave Event)
 drop policy if exists "Semua orang dapat membaca playlist" on public.playlists;
+drop policy if exists "Admin dapat mengubah playlist" on public.playlists;
+drop policy if exists "Kelola playlist" on public.playlists;
 create policy "Semua orang dapat membaca playlist"
   on public.playlists for select
   to anon, authenticated
   using (true);
-
-drop policy if exists "Admin dapat mengubah playlist" on public.playlists;
-create policy "Admin dapat mengubah playlist"
+create policy "Kelola playlist"
   on public.playlists for all
-  to authenticated
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
+  to anon, authenticated
+  using (true)
+  with check (true);
 
--- EVENTS POLICIES (Publik baca event, Admin kelola)
+-- EVENTS POLICIES (Publik baca & kelola via platform Crave Event)
 drop policy if exists "Semua orang dapat melihat event" on public.events;
+drop policy if exists "Admin dapat menambah atau mengedit event" on public.events;
+drop policy if exists "Kelola event" on public.events;
 create policy "Semua orang dapat melihat event"
   on public.events for select
   to anon, authenticated
   using (true);
-
-drop policy if exists "Admin dapat menambah atau mengedit event" on public.events;
-create policy "Admin dapat menambah atau mengedit event"
+create policy "Kelola event"
   on public.events for all
-  to authenticated
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 -- REGISTRATIONS POLICIES
 drop policy if exists "Pengguna dapat melihat pendaftaran miliknya" on public.registrations;
-create policy "Pengguna dapat melihat pendaftaran miliknya"
-  on public.registrations for select
-  to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
-
 drop policy if exists "Pengguna dapat mendaftar event" on public.registrations;
-create policy "Pengguna dapat mendaftar event"
-  on public.registrations for insert
-  to authenticated
-  with check (user_id = auth.uid());
-
 drop policy if exists "Pengguna dapat memperbarui pendaftaran miliknya" on public.registrations;
-create policy "Pengguna dapat memperbarui pendaftaran miliknya"
-  on public.registrations for update
-  to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
+drop policy if exists "Kelola registrations" on public.registrations;
+create policy "Kelola registrations"
+  on public.registrations for all
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 -- CERTIFICATES POLICIES
 drop policy if exists "Semua orang dapat memverifikasi sertifikat publik" on public.certificates;
+drop policy if exists "Admin atau sistem dapat menerbitkan sertifikat" on public.certificates;
+drop policy if exists "Kelola sertifikat" on public.certificates;
 create policy "Semua orang dapat memverifikasi sertifikat publik"
   on public.certificates for select
   to anon, authenticated
   using (true);
-
-drop policy if exists "Admin atau sistem dapat menerbitkan sertifikat" on public.certificates;
-create policy "Admin atau sistem dapat menerbitkan sertifikat"
+create policy "Kelola sertifikat"
   on public.certificates for all
-  to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 -- BLOGS POLICIES
 drop policy if exists "Semua orang dapat membaca blog publik" on public.blogs;
+drop policy if exists "Admin dapat mengelola artikel blog" on public.blogs;
+drop policy if exists "Kelola artikel blog" on public.blogs;
 create policy "Semua orang dapat membaca blog publik"
   on public.blogs for select
   to anon, authenticated
-  using (is_published = true or exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin')));
-
-drop policy if exists "Admin dapat mengelola artikel blog" on public.blogs;
-create policy "Admin dapat mengelola artikel blog"
+  using (true);
+create policy "Kelola artikel blog"
   on public.blogs for all
-  to authenticated
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role::text in ('admin', 'superadmin'))
-  );
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 -- ==============================================================================
 -- 11. RPC FUNCTION: PRESENSI QR & OTOMATISASI SERTIFIKAT

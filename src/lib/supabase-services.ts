@@ -32,7 +32,7 @@ export function mapDatabaseEventToApp(record: any): EventItem {
     registered: record.registered_count || 0,
     attended: 0,
     thumbnail: record.banner_url || "/logo.png",
-    status: (record.status as "upcoming" | "live" | "past") || "upcoming",
+    status: record.status === "ongoing" ? "live" : (record.status as "upcoming" | "live" | "past") || "upcoming",
     speaker: record.speaker_name || "Eka Revandi",
     attendanceCode: record.attendance_code || "CRV-" + record.id.slice(-4).toUpperCase(),
   };
@@ -144,8 +144,13 @@ export const playlistsApi = {
 
     try {
       const { error } = await supabase.from("playlists").update(payload).eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[playlistsApi.update] Error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[playlistsApi.update] Exception:", err);
       return false;
     }
   },
@@ -154,8 +159,13 @@ export const playlistsApi = {
     if (!isSupabaseConfigured) return false;
     try {
       const { error } = await supabase.from("playlists").delete().eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[playlistsApi.delete] Error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[playlistsApi.delete] Exception:", err);
       return false;
     }
   },
@@ -211,6 +221,7 @@ export const eventsApi = {
   async create(item: Omit<EventItem, "id" | "registered" | "attended">): Promise<EventItem | null> {
     if (!isSupabaseConfigured) return null;
 
+    const eventStatus = item.status === "live" ? "ongoing" : item.status || "upcoming";
     const payload = {
       title: item.title,
       description: item.description || item.longDescription,
@@ -226,7 +237,7 @@ export const eventsApi = {
       quota: item.quota || 100,
       zoom_link: item.zoomLink || "https://zoom.us",
       playlist: item.playlist || "#EnglishClub",
-      status: item.status || "upcoming",
+      status: eventStatus,
       attendance_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
       banner_url: item.thumbnail || null,
     };
@@ -261,15 +272,22 @@ export const eventsApi = {
     }
     if (updates.location !== undefined) payload['location'] = updates.location;
     if (updates.quota !== undefined) payload['quota'] = updates.quota;
-    if (updates.status !== undefined) payload['status'] = updates.status;
+    if (updates.status !== undefined) {
+      payload['status'] = updates.status === "live" ? "ongoing" : updates.status;
+    }
     if (updates.zoomLink !== undefined) payload['zoom_link'] = updates.zoomLink;
     if (updates.speaker !== undefined) payload['speaker_name'] = updates.speaker;
     if (updates.thumbnail !== undefined) payload['banner_url'] = updates.thumbnail;
 
     try {
       const { error } = await supabase.from("events").update(payload).eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[eventsApi.update] Error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[eventsApi.update] Exception:", err);
       return false;
     }
   },
@@ -278,8 +296,13 @@ export const eventsApi = {
     if (!isSupabaseConfigured) return false;
     try {
       const { error } = await supabase.from("events").delete().eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[eventsApi.delete] Error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[eventsApi.delete] Exception:", err);
       return false;
     }
   },
@@ -391,8 +414,13 @@ export const blogsApi = {
 
     try {
       const { error } = await supabase.from("blogs").update(payload).eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[blogsApi.update] Error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[blogsApi.update] Exception:", err);
       return false;
     }
   },
@@ -402,7 +430,7 @@ export const blogsApi = {
     try {
       const { error } = await supabase.from("blogs").delete().eq("id", id);
       if (error) {
-        console.error("[blogsApi.delete] Supabase error:", error.message, error.details, error.hint);
+        console.error("[blogsApi.delete] Error:", error.message);
         return false;
       }
       return true;
