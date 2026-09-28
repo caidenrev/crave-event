@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { MarkdownRenderer } from "../../components/aether/markdown-renderer";
 import { Badge, ButtonLink } from "../../components/aether/primitives";
 import { SiteFooter, SiteHeader } from "../../components/aether/site-header";
-import { formatDate, host } from "../../lib/mock-data";
+import { formatDate } from "../../lib/mock-data";
 import { useApp } from "../../lib/store";
 import { shareContent } from "../../lib/utils";
 
@@ -91,7 +91,7 @@ function BlogPostDetailPage() {
                   <span className="text-xs font-bold text-white">ER</span>
                 </span>
                 <div>
-                  <p className="font-semibold text-ink leading-tight">{host.name}</p>
+                  <p className="font-semibold text-ink leading-tight">Eka Revandi</p>
                   <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
                 </div>
               </div>
@@ -144,20 +144,7 @@ function BlogPostDetailPage() {
           />
         </article>
 
-        {/* Author Bio Box */}
-        <div className="neu mt-12 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
-          <div className="flex size-20 shrink-0 items-center justify-center rounded-pill bg-accent-strong text-2xl font-bold text-white">
-            ER
-          </div>
-          <div>
-            <h4 className="text-[18px] font-bold text-ink">{host.name}</h4>
-            <p className="text-[13px] text-accent font-medium">Native Speaker &amp; Webinar Host</p>
-            <p className="mt-2 text-[14px] leading-relaxed text-ink-secondary">
-              Membawakan sesi terpandu seputar public speaking, pronunciation, dan strategi
-              komunikasi profesional. Semua webinar diselenggarakan langsung melalui Crave Event.
-            </p>
-          </div>
-        </div>
+
 
         {/* Related Webinar CTA */}
         {relatedEvents.length > 0 && (
