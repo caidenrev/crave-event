@@ -393,7 +393,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { event: "DELETE", schema: "public", table: "playlists" },
         (payload) => {
           if (!isMounted) return;
-          setPlaylists((prev) => prev.filter((p) => p.id !== payload.old.id));
+          setPlaylists((prev) => prev.filter((p) => p.id !== payload.old['id']));
         },
       )
       // --- Events ---
@@ -424,7 +424,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { event: "DELETE", schema: "public", table: "events" },
         (payload) => {
           if (!isMounted) return;
-          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+          setEvents((prev) => prev.filter((e) => e.id !== payload.old['id']));
         },
       )
       // --- Blogs ---
@@ -455,7 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { event: "DELETE", schema: "public", table: "blogs" },
         (payload) => {
           if (!isMounted) return;
-          setBlogPosts((prev) => prev.filter((b) => b.id !== payload.old.id));
+          setBlogPosts((prev) => prev.filter((b) => b.id !== payload.old['id']));
         },
       )
       .subscribe();

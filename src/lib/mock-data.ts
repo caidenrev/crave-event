@@ -262,36 +262,9 @@ export const events: EventItem[] = [
 
 export const myEvents: MyEvent[] = [];
 
-const names = [
-  "Aisyah Putri",
-  "Bimo Saputra",
-  "Citra Andini",
-  "Daniel Hutagalung",
-  "Elma Wijaya",
-  "Fajar Nugroho",
-  "Gita Larasati",
-  "Hendra Kusuma",
-  "Indah Permata",
-  "Joko Prasetyo",
-  "Kirana Dewi",
-  "Lukman Hakim",
-];
 
-export const attendees: Attendee[] = names.flatMap((name, i) => {
-  const ev = events[i % events.length]!;
-  const attended = i % 3 !== 2;
-  return [
-    {
-      id: `at-${i + 1}`,
-      name,
-      email: `${name.split(" ")[0]!.toLowerCase()}@mail.com`,
-      eventId: ev.id,
-      paid: ev.type === "free" ? true : i % 4 !== 3,
-      attended: ev.status === "past" ? attended : false,
-      checkInAt: ev.status === "past" && attended ? "19:07" : null,
-    },
-  ];
-});
+export const attendees: Attendee[] = [];
+
 
 export const blogPosts: BlogPost[] = [
   {
