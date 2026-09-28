@@ -135,15 +135,13 @@ function BlogPostDetailPage() {
             "{post.excerpt}"
           </div>
 
-          <div className="glass rounded-2xl p-6 sm:p-8">
-            <MarkdownRenderer
-              content={
-                Array.isArray(post.body)
-                  ? post.body.join("\n\n")
-                  : ((post as any).body || post.excerpt || "")
-              }
-            />
-          </div>
+          <MarkdownRenderer
+            content={
+              Array.isArray(post.body)
+                ? post.body.join("\n\n")
+                : ((post as any).body || post.excerpt || "")
+            }
+          />
         </article>
 
         {/* Author Bio Box */}
