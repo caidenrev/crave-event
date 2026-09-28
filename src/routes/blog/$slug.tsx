@@ -86,14 +86,9 @@ function BlogPostDetailPage() {
           <div className="mt-6 border-y border-hairline py-3.5 text-[13px] text-ink-secondary">
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap text-left">
               {/* Author */}
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="neu-icon-sphere size-8.5 shrink-0">
-                  <span className="text-xs font-bold text-white">ER</span>
-                </span>
-                <div>
-                  <p className="font-semibold text-ink leading-tight">Eka Revandi</p>
-                  <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
-                </div>
+              <div className="shrink-0">
+                <p className="font-semibold text-ink leading-tight">Eka Revandi</p>
+                <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
               </div>
 
               <span className="hidden sm:inline text-hairline">|</span>

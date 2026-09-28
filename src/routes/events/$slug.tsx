@@ -219,22 +219,9 @@ function EventDetailPage() {
             <div className="border-y border-hairline py-3.5 text-[13px] text-ink-secondary">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap">
                 {/* Author Info */}
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="neu-icon-sphere size-8.5 shrink-0">
-                    <span className="text-xs font-bold text-white">
-                      {(event?.speaker || "CR")
-                        .split(" ")
-                        .filter(Boolean)
-                        .map((s) => s[0] || "")
-                        .slice(0, 2)
-                        .join("")
-                        .toUpperCase() || "CR"}
-                    </span>
-                  </span>
-                  <div>
-                    <p className="font-semibold text-ink leading-tight">{event?.speaker || "Speaker"}</p>
-                    <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
-                  </div>
+                <div className="shrink-0">
+                  <p className="font-semibold text-ink leading-tight">{event?.speaker || "Speaker"}</p>
+                  <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
                 </div>
 
                 <span className="hidden sm:inline text-hairline">|</span>
