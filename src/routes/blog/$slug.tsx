@@ -115,15 +115,16 @@ function BlogPostDetailPage() {
         <div
           className="mt-8 h-64 sm:h-80 w-full rounded-2xl shadow-md overflow-hidden relative"
           style={
-            post.cover.startsWith("http") ||
-            post.cover.startsWith("data:") ||
-            post.cover.startsWith("/")
+            post?.cover &&
+            (post.cover.startsWith("http") ||
+              post.cover.startsWith("data:") ||
+              post.cover.startsWith("/"))
               ? {
                   backgroundImage: `url("${post.cover}")`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }
-              : { background: post.cover }
+              : { background: post?.cover || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
           }
         />
 

@@ -59,15 +59,16 @@ function BlogIndexPage() {
               <div
                 className="h-56 w-full md:h-auto md:w-2/5 shrink-0"
                 style={
-                  featuredPost.cover.startsWith("http") ||
-                  featuredPost.cover.startsWith("data:") ||
-                  featuredPost.cover.startsWith("/")
+                  featuredPost?.cover &&
+                  (featuredPost.cover.startsWith("http") ||
+                    featuredPost.cover.startsWith("data:") ||
+                    featuredPost.cover.startsWith("/"))
                     ? {
                         backgroundImage: `url("${featuredPost.cover}")`,
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                       }
-                    : { background: featuredPost.cover }
+                    : { background: featuredPost?.cover || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
                 }
               />
               <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
@@ -154,15 +155,16 @@ function BlogIndexPage() {
                 <div
                   className="-mx-6 -mt-6 mb-4 h-36 w-[calc(100%+3rem)] shrink-0 overflow-hidden"
                   style={
-                    post.cover.startsWith("http") ||
-                    post.cover.startsWith("data:") ||
-                    post.cover.startsWith("/")
+                    post?.cover &&
+                    (post.cover.startsWith("http") ||
+                      post.cover.startsWith("data:") ||
+                      post.cover.startsWith("/"))
                       ? {
                           backgroundImage: `url("${post.cover}")`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",
                         }
-                      : { background: post.cover }
+                      : { background: post?.cover || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
                   }
                 />
 

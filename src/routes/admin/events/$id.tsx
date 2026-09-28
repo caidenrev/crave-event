@@ -27,10 +27,14 @@ function AdminEditEventPage() {
   const [speaker, setSpeaker] = useState(event?.speaker || host.name);
   const [type, setType] = useState<"free" | "paid">(event?.type || "free");
   const [price, setPrice] = useState(event?.price || 0);
-  const [date, setDate] = useState(event?.startsAt ? event.startsAt.split("T")[0]! : "2026-10-25");
-  const [time, setTime] = useState(
-    event?.startsAt ? event.startsAt.split("T")[1]!.slice(0, 5) : "19:00",
-  );
+  const [date, setDate] = useState(() => {
+    if (!event?.startsAt) return "2026-10-25";
+    return event.startsAt.includes("T") ? event.startsAt.split("T")[0]! : event.startsAt;
+  });
+  const [time, setTime] = useState(() => {
+    if (!event?.startsAt || !event.startsAt.includes("T")) return "19:00";
+    return event.startsAt.split("T")[1]?.slice(0, 5) || "19:00";
+  });
   const [durationMinutes, setDurationMinutes] = useState(event?.durationMinutes || 90);
   const [platform, setPlatform] = useState(event?.platform || "Zoom");
   const [location, setLocation] = useState(event?.location || "Online · Zoom Meeting");
@@ -53,8 +57,12 @@ function AdminEditEventPage() {
       setType(event.type);
       setPrice(event.price);
       if (event.startsAt) {
-        setDate(event.startsAt.split("T")[0]!);
-        setTime(event.startsAt.split("T")[1]!.slice(0, 5));
+        setDate(event.startsAt.includes("T") ? event.startsAt.split("T")[0]! : event.startsAt);
+        setTime(
+          event.startsAt.includes("T")
+            ? event.startsAt.split("T")[1]?.slice(0, 5) || "19:00"
+            : "19:00",
+        );
       }
       setDurationMinutes(event.durationMinutes);
       setPlatform(event.platform);

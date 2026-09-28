@@ -162,11 +162,13 @@ function AdminBlogListPage() {
             </thead>
             <tbody className="divide-y divide-hairline">
               {filtered.map((post) => {
+                const cover = post?.cover || "";
                 const isImageSrc =
-                  post.cover.startsWith("http://") ||
-                  post.cover.startsWith("https://") ||
-                  post.cover.startsWith("data:image/") ||
-                  post.cover.startsWith("/");
+                  Boolean(cover) &&
+                  (cover.startsWith("http://") ||
+                    cover.startsWith("https://") ||
+                    cover.startsWith("data:image/") ||
+                    cover.startsWith("/"));
 
                 return (
                   <tr key={post.id} className="hover:bg-white/50 transition-colors">

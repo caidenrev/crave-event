@@ -150,16 +150,17 @@ function AdminEventsPage() {
                       <div
                         className="size-11 shrink-0 rounded-lg shadow-xs overflow-hidden"
                         style={
-                          item.thumbnail.startsWith("http://") ||
-                          item.thumbnail.startsWith("https://") ||
-                          item.thumbnail.startsWith("data:image/") ||
-                          item.thumbnail.startsWith("/")
+                          item?.thumbnail &&
+                          (item.thumbnail.startsWith("http://") ||
+                            item.thumbnail.startsWith("https://") ||
+                            item.thumbnail.startsWith("data:image/") ||
+                            item.thumbnail.startsWith("/"))
                             ? {
                                 backgroundImage: `url("${item.thumbnail}")`,
                                 backgroundSize: "cover",
                                 backgroundPosition: "center",
                               }
-                            : { background: item.thumbnail }
+                            : { background: item?.thumbnail || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
                         }
                       />
                       <div className="min-w-0 max-w-xs">

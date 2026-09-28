@@ -169,11 +169,13 @@ function EventDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Visual Thumbnail Banner */}
             {(() => {
+              const thumb = event?.thumbnail || "";
               const isImageSrc =
-                event.thumbnail.startsWith("http://") ||
-                event.thumbnail.startsWith("https://") ||
-                event.thumbnail.startsWith("data:image/") ||
-                event.thumbnail.startsWith("/");
+                Boolean(thumb) &&
+                (thumb.startsWith("http://") ||
+                  thumb.startsWith("https://") ||
+                  thumb.startsWith("data:image/") ||
+                  thumb.startsWith("/"));
 
               return (
                 <div
@@ -181,11 +183,11 @@ function EventDetailPage() {
                   style={
                     isImageSrc
                       ? {
-                          backgroundImage: `url("${event.thumbnail}")`,
+                          backgroundImage: `url("${thumb}")`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",
                         }
-                      : { background: event.thumbnail }
+                      : { background: thumb || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
                   }
                 >
                   {isImageSrc && (
@@ -220,16 +222,17 @@ function EventDetailPage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="neu-icon-sphere size-8.5 shrink-0">
                     <span className="text-xs font-bold text-white">
-                      {event.speaker
+                      {(event?.speaker || "CR")
                         .split(" ")
-                        .map((s) => s[0])
+                        .filter(Boolean)
+                        .map((s) => s[0] || "")
                         .slice(0, 2)
                         .join("")
-                        .toUpperCase()}
+                        .toUpperCase() || "CR"}
                     </span>
                   </span>
                   <div>
-                    <p className="font-semibold text-ink leading-tight">{event.speaker}</p>
+                    <p className="font-semibold text-ink leading-tight">{event?.speaker || "Speaker"}</p>
                     <p className="text-[11px] text-ink-tertiary">Host &amp; Speaker Utama</p>
                   </div>
                 </div>
