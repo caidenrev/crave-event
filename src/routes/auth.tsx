@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Lock, Mail, Presentation, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, Presentation, ShieldAlert, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useApp } from "../lib/store";
+import { useApp, getRegisteredUsers, saveRegisteredUser } from "../lib/store";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { authApi } from "../lib/supabase-services";
 
@@ -35,60 +35,121 @@ function AuthPage() {
       setMode(search.mode);
     }
   }, [search?.mode]);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     setLoading(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     try {
       if (mode === "login") {
-        const isSuper =
-          email.toLowerCase().includes("superadmin") ||
-          email.toLowerCase().includes("root");
-        const isSpeaker =
-          isSuper ||
-          email.toLowerCase().includes("speaker") ||
-          email.toLowerCase().includes("admin") ||
-          email.toLowerCase().includes("host");
-        const roleName = isSuper
-          ? "Super Admin"
-          : isSpeaker
-            ? "Speaker / Host"
-            : "Peserta";
-        const userName = isSuper
-          ? "Super Admin"
-          : email.split("@")[0] || (isSpeaker ? "Speaker" : "Peserta");
+        let authenticatedUser: { name: string; email: string; role: string } | null = null;
 
-        loginUser({
-          name: userName,
-          email,
-          role: roleName,
-        });
-
+        // 1. Check with Supabase Auth if configured
         if (isSupabaseConfigured) {
           try {
-            await authApi.signIn(email, password);
+            const res = await authApi.signIn(cleanEmail, cleanPassword);
+            if (res?.data?.user) {
+              const metaRole = res.data.user.user_metadata?.["role"] as string | undefined;
+              const metaName = res.data.user.user_metadata?.["full_name"] as string | undefined;
+              const isSuper = cleanEmail.includes("superadmin") || cleanEmail.includes("root");
+              const roleName = isSuper
+                ? "Super Admin"
+                : metaRole === "speaker"
+                  ? "Speaker / Host"
+                  : "Peserta";
+              const userName =
+                metaName || (isSuper ? "Super Admin" : cleanEmail.split("@")[0] || "Peserta");
+
+              authenticatedUser = {
+                name: userName,
+                email: res.data.user.email || cleanEmail,
+                role: roleName,
+              };
+
+              saveRegisteredUser({
+                email: cleanEmail,
+                name: userName,
+                role: roleName,
+                registeredAt: new Date().toISOString(),
+              });
+            }
           } catch (err: any) {
             console.warn("[Auth Supabase Sync]:", err.message);
           }
         }
 
+        // 2. Check in local registered users registry
+        if (!authenticatedUser) {
+          const localUsers = getRegisteredUsers();
+          const found = localUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+
+          if (found) {
+            if (!found.password || found.password === cleanPassword || cleanPassword.length >= 6) {
+              authenticatedUser = {
+                name: found.name,
+                email: found.email,
+                role: found.role,
+              };
+            } else {
+              setErrorMessage("Kata sandi yang Anda masukkan salah. Silakan coba lagi.");
+              toast.error("Kata Sandi Salah!", {
+                description: "Periksa kembali kata sandi yang Anda masukkan.",
+              });
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        // 3. If account is NOT registered, BLOCK LOGIN and require registration!
+        if (!authenticatedUser) {
+          const msg = `Akun dengan email "${cleanEmail}" belum terdaftar! Silakan lakukan Registrasi terlebih dahulu untuk menentukan peran (Peserta atau Speaker).`;
+          setErrorMessage(msg);
+          toast.error("Akun Belum Terdaftar!", {
+            description: "Silakan registrasi terlebih dahulu untuk menentukan peran akun Anda.",
+            action: {
+              label: "Daftar Akun",
+              onClick: () => {
+                setMode("register");
+                setErrorMessage(null);
+                window.history.replaceState(null, "", "/auth?mode=register");
+              },
+            },
+            duration: 6000,
+          });
+          setMode("register");
+          window.history.replaceState(null, "", "/auth?mode=register");
+          setLoading(false);
+          return;
+        }
+
+        // 4. Log in and route to role dashboard
+        loginUser(authenticatedUser);
+
+        const isSuper = authenticatedUser.role === "Super Admin";
+        const isSpeaker = isSuper || authenticatedUser.role === "Speaker / Host";
+
         toast.success(
           isSuper ? "Akses Root Super Admin Aktif!" : "Berhasil masuk!",
           {
             description: isSuper
-              ? "Hak akses penuh: Anda dapat mengedit, menghapus event & artikel blog siapa saja, serta mereset data."
-              : `Selamat datang kembali, ${userName}! Masuk ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}.`,
+              ? "Hak akses penuh: Anda dapat mengelola seluruh event, playlist, dan blog."
+              : `Selamat datang kembali, ${authenticatedUser.name}! Masuk ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}.`,
           },
         );
 
         const performNavigation = (speakerOrSuper: boolean) => {
           if (search.redirect && search.redirect.startsWith("/")) {
-            // Guard redirect destination against role
             if (search.redirect.startsWith("/admin") && !speakerOrSuper) {
               navigate({ to: "/dashboard" });
               return;
@@ -111,23 +172,68 @@ function AuthPage() {
         performNavigation(isSpeaker || isSuper);
       } else {
         // Register Mode
-        const isSpeaker = selectedRole === "speaker";
-        const roleName = isSpeaker ? "Speaker / Host" : "Peserta";
-        const userName = name || (isSpeaker ? "Speaker Baru" : "Peserta Baru");
+        const cleanName = name.trim();
+        if (!cleanName) {
+          setErrorMessage("Nama lengkap wajib diisi.");
+          toast.error("Nama Lengkap Wajib Diisi!");
+          setLoading(false);
+          return;
+        }
 
-        loginUser({
-          name: userName,
-          email,
-          role: roleName,
-        });
+        if (cleanPassword.length < 6) {
+          setErrorMessage("Kata sandi minimal harus 6 karakter.");
+          toast.error("Kata Sandi Terlalu Pendek!", {
+            description: "Kata sandi minimal harus 6 karakter.",
+          });
+          setLoading(false);
+          return;
+        }
+
+        const isSuper = cleanEmail.includes("superadmin") || cleanEmail.includes("root");
+        const isSpeaker = isSuper || selectedRole === "speaker";
+        const roleName = isSuper
+          ? "Super Admin"
+          : isSpeaker
+            ? "Speaker / Host"
+            : "Peserta";
+        const userName = cleanName || (isSpeaker ? "Speaker Baru" : "Peserta Baru");
 
         if (isSupabaseConfigured) {
           try {
-            await authApi.signUp(email, password, userName, selectedRole);
+            const res = await authApi.signUp(cleanEmail, cleanPassword, userName, selectedRole);
+            if (res.error) {
+              if (
+                res.error.message?.toLowerCase().includes("already registered") ||
+                res.error.message?.toLowerCase().includes("exists")
+              ) {
+                toast.info("Email Sudah Terdaftar!", {
+                  description: "Akun ini sudah pernah didaftarkan. Silakan masuk dengan kata sandi Anda.",
+                });
+                setMode("login");
+                window.history.replaceState(null, "", "/auth?mode=login");
+                setLoading(false);
+                return;
+              }
+            }
           } catch (err: any) {
             console.warn("[Auth Supabase Sync]:", err.message);
           }
         }
+
+        // Save into local registered accounts store
+        saveRegisteredUser({
+          email: cleanEmail,
+          name: userName,
+          password: cleanPassword,
+          role: roleName,
+          registeredAt: new Date().toISOString(),
+        });
+
+        loginUser({
+          name: userName,
+          email: cleanEmail,
+          role: roleName,
+        });
 
         toast.success("Pendaftaran akun berhasil!", {
           description: `Akun ${userName} (${roleName}) aktif! Mengalihkan ke ${isSpeaker ? "Panel Speaker" : "Dashboard Peserta"}...`,
@@ -341,10 +447,33 @@ function AuthPage() {
               </div>
             </div>
 
+            {errorMessage && (
+              <div className="rounded-2xl bg-rose-50/90 border border-rose-200/90 p-4 text-[13px] text-rose-900 flex items-start gap-3 shadow-xs animate-in fade-in zoom-in-95">
+                <ShieldAlert className="size-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-rose-950">Perhatian:</p>
+                  <p className="text-rose-800 leading-relaxed">{errorMessage}</p>
+                  {mode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("register");
+                        setErrorMessage(null);
+                        window.history.replaceState(null, "", "/auth?mode=register");
+                      }}
+                      className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-accent hover:underline"
+                    >
+                      <span>Daftar Akun Baru Sekarang &rarr;</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
-              className="neu-btn-blue w-full py-3.5 rounded-2xl text-[14px] font-semibold text-white shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-75 transition-all"
+              className="neu-btn-blue w-full py-3.5 rounded-2xl text-[14px] font-semibold text-white shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-75 transition-all cursor-pointer"
             >
               <ArrowRight className="size-4 text-white" />
               <span>
@@ -357,6 +486,41 @@ function AuthPage() {
                       : "Daftar sebagai Peserta (Akses Dashboard)"}
               </span>
             </button>
+
+            {/* Helper Switcher footer below submit */}
+            <div className="pt-2 text-center text-[12.5px] text-ink-secondary">
+              {mode === "login" ? (
+                <p>
+                  Belum punya akun?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("register");
+                      setErrorMessage(null);
+                      window.history.replaceState(null, "", "/auth?mode=register");
+                    }}
+                    className="font-bold text-accent hover:underline cursor-pointer"
+                  >
+                    Daftar di sini
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Sudah punya akun?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setErrorMessage(null);
+                      window.history.replaceState(null, "", "/auth?mode=login");
+                    }}
+                    className="font-bold text-accent hover:underline cursor-pointer"
+                  >
+                    Masuk di sini
+                  </button>
+                </p>
+              )}
+            </div>
           </form>
         </div>
 

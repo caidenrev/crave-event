@@ -60,7 +60,37 @@ type AppContextType = {
   hasAttended: (eventId: string) => boolean;
 };
 
-const AppContext = createContext<AppContextType | null>(null);
+export type RegisteredAccount = {
+  email: string;
+  name: string;
+  password?: string;
+  role: "Peserta" | "Speaker / Host" | "Super Admin" | string;
+  registeredAt: string;
+};
+
+export const initialRegisteredAccounts: RegisteredAccount[] = [
+  {
+    email: "root@crave.id",
+    name: "Root Super Admin",
+    password: "password123",
+    role: "Super Admin",
+    registeredAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    email: "superadmin@crave.id",
+    name: "Super Admin Crave",
+    password: "password123",
+    role: "Super Admin",
+    registeredAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    email: "speaker@crave.id",
+    name: "Eka Revandi",
+    password: "password123",
+    role: "Speaker / Host",
+    registeredAt: "2026-01-01T00:00:00.000Z",
+  },
+];
 
 export const STORAGE_KEYS = {
   EVENTS: "aether_events_v1",
@@ -72,7 +102,32 @@ export const STORAGE_KEYS = {
   BLOGS: "aether_blogs_v1",
   BLOGS_CLEARED: "aether_blogs_cleared_v1",
   USER: "aether_current_user_v1",
+  REGISTERED_USERS: "crave_registered_users_v2",
 };
+
+export function getRegisteredUsers(): RegisteredAccount[] {
+  if (typeof window === "undefined") return initialRegisteredAccounts;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return initialRegisteredAccounts;
+}
+
+export function saveRegisteredUser(account: RegisteredAccount) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = getRegisteredUsers();
+    const updated = [
+      ...current.filter((u) => u.email.toLowerCase() !== account.email.toLowerCase()),
+      account,
+    ];
+    localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(updated));
+  } catch {}
+}
 
 const getUserRegistrationsKey = (email?: string | null) => {
   if (!email) return null;
