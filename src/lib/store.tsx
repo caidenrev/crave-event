@@ -16,8 +16,16 @@ import {
   type MyEvent,
   type Playlist,
 } from "./mock-data";
-import { isSupabaseConfigured } from "./supabase";
-import { eventsApi, registrationsApi, blogsApi, playlistsApi } from "./supabase-services";
+import { isSupabaseConfigured, supabase } from "./supabase";
+import {
+  eventsApi,
+  registrationsApi,
+  blogsApi,
+  playlistsApi,
+  mapDatabaseEventToApp,
+  mapDatabaseBlogToApp,
+  mapDatabasePlaylistToApp,
+} from "./supabase-services";
 
 type AppContextType = {
   events: EventItem[];
@@ -354,8 +362,107 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // 5. Realtime subscriptions — update state on any DB change
+    const channel = supabase
+      .channel("crave-realtime")
+      // --- Playlists ---
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "playlists" },
+        (payload) => {
+          if (!isMounted) return;
+          const newPl = mapDatabasePlaylistToApp(payload.new);
+          setPlaylists((prev) =>
+            prev.some((p) => p.id === newPl.id) ? prev : [...prev, newPl],
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "playlists" },
+        (payload) => {
+          if (!isMounted) return;
+          const updated = mapDatabasePlaylistToApp(payload.new);
+          setPlaylists((prev) =>
+            prev.map((p) => (p.id === updated.id ? updated : p)),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "playlists" },
+        (payload) => {
+          if (!isMounted) return;
+          setPlaylists((prev) => prev.filter((p) => p.id !== payload.old.id));
+        },
+      )
+      // --- Events ---
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "events" },
+        (payload) => {
+          if (!isMounted) return;
+          const newEv = mapDatabaseEventToApp(payload.new);
+          setEvents((prev) =>
+            prev.some((e) => e.id === newEv.id) ? prev : [...prev, newEv],
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "events" },
+        (payload) => {
+          if (!isMounted) return;
+          const updated = mapDatabaseEventToApp(payload.new);
+          setEvents((prev) =>
+            prev.map((e) => (e.id === updated.id ? updated : e)),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "events" },
+        (payload) => {
+          if (!isMounted) return;
+          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+        },
+      )
+      // --- Blogs ---
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "blogs" },
+        (payload) => {
+          if (!isMounted) return;
+          const newPost = mapDatabaseBlogToApp(payload.new);
+          setBlogPosts((prev) =>
+            prev.some((b) => b.id === newPost.id) ? prev : [...prev, newPost],
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "blogs" },
+        (payload) => {
+          if (!isMounted) return;
+          const updated = mapDatabaseBlogToApp(payload.new);
+          setBlogPosts((prev) =>
+            prev.map((b) => (b.id === updated.id ? updated : b)),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "blogs" },
+        (payload) => {
+          if (!isMounted) return;
+          setBlogPosts((prev) => prev.filter((b) => b.id !== payload.old.id));
+        },
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
     };
   }, []);
 
