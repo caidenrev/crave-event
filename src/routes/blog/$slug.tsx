@@ -6,6 +6,7 @@ import { Badge, ButtonLink } from "../../components/aether/primitives";
 import { SiteFooter, SiteHeader } from "../../components/aether/site-header";
 import { formatDate, host } from "../../lib/mock-data";
 import { useApp } from "../../lib/store";
+import { shareContent } from "../../lib/utils";
 
 export const Route = createFileRoute("/blog/$slug")({
   component: BlogPostDetailPage,
@@ -35,10 +36,17 @@ function BlogPostDetailPage() {
     );
   }
 
-  const handleShare = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Tautan artikel berhasil disalin!");
+  const handleShare = async () => {
+    const result = await shareContent({
+      title: post.title,
+      text: post.excerpt,
+      path: `/blog/${post.slug}`,
+    });
+
+    if (result.copied) {
+      toast.success("Tautan artikel publik berhasil disalin!", {
+        description: "Link siap dibagikan ke teman atau media sosial.",
+      });
     }
   };
 

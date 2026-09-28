@@ -32,6 +32,7 @@ import {
 import { SiteFooter, SiteHeader } from "../../components/aether/site-header";
 import { formatDate, formatPrice, formatTime, type EventItem } from "../../lib/mock-data";
 import { useApp } from "../../lib/store";
+import { shareContent } from "../../lib/utils";
 
 export const Route = createFileRoute("/events/$slug")({
   component: EventDetailPage,
@@ -116,10 +117,17 @@ function EventDetailPage() {
     });
   };
 
-  const copyShareLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link berhasil disalin ke clipboard!");
+  const copyShareLink = async () => {
+    const result = await shareContent({
+      title: event.title,
+      text: event.description,
+      path: `/events/${event.slug}`,
+    });
+
+    if (result.copied) {
+      toast.success("Tautan event publik berhasil disalin!", {
+        description: "Link siap dibagikan ke teman atau media sosial.",
+      });
     }
   };
 
