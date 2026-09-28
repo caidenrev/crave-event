@@ -46,36 +46,45 @@ function AdminNewEventPage() {
     setSlug(generatedSlug);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const startsAt = `${date}T${time}:00+07:00`;
 
-    const newEvent = createEvent({
-      slug: slug || `event-${Date.now()}`,
-      title,
-      description,
-      longDescription: longDescription || description,
-      playlist,
-      category,
-      type,
-      price: type === "free" ? 0 : Number(price),
-      startsAt,
-      durationMinutes: Number(durationMinutes),
-      platform,
-      location,
-      zoomLink,
-      quota: Number(quota),
-      thumbnail,
-      status: "upcoming",
-      speaker: speaker.trim() || currentUser?.name || host.name,
-    });
+    setLoading(true);
+    try {
+      const newEvent = await createEvent({
+        slug: slug || `event-${Date.now()}`,
+        title,
+        description,
+        longDescription: longDescription || description,
+        playlist,
+        category,
+        type,
+        price: type === "free" ? 0 : Number(price),
+        startsAt,
+        durationMinutes: Number(durationMinutes),
+        platform,
+        location,
+        zoomLink,
+        quota: Number(quota),
+        thumbnail,
+        status: "upcoming",
+        speaker: speaker.trim() || currentUser?.name || host.name,
+      });
 
-    toast.success("Event Berhasil Dibuat!", {
-      description: `"${newEvent.title}" kini telah aktif di katalog publik dan siap menerima pendaftaran.`,
-    });
+      toast.success("Event Berhasil Dibuat!", {
+        description: `"${newEvent.title}" kini telah aktif di katalog publik dan siap menerima pendaftaran.`,
+      });
 
-    navigate({ to: "/admin/events" });
+      navigate({ to: "/admin/events" });
+    } catch (err: any) {
+      toast.error("Gagal membuat event: " + (err?.message || "Terjadi kesalahan."));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -127,7 +127,13 @@ function BlogPostDetailPage() {
           </div>
 
           <div className="glass rounded-2xl p-6 sm:p-8">
-            <MarkdownRenderer content={post.body.join("\n\n")} />
+            <MarkdownRenderer
+              content={
+                Array.isArray(post.body)
+                  ? post.body.join("\n\n")
+                  : ((post as any).body || post.excerpt || "")
+              }
+            />
           </div>
         </article>
 

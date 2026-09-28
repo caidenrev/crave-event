@@ -9,7 +9,6 @@ import {
   attendees as initialAttendees,
   blogPosts as initialBlogPosts,
   events as initialEvents,
-  myEvents as initialMyEvents,
   playlists as initialPlaylists,
   type Attendee,
   type BlogPost,
@@ -19,7 +18,6 @@ import {
 } from "./mock-data";
 import { isSupabaseConfigured } from "./supabase";
 import { eventsApi, registrationsApi, blogsApi } from "./supabase-services";
-import { deleteEventServerFn, deleteAllEventsServerFn } from "./server-api";
 
 type AppContextType = {
   events: EventItem[];
@@ -39,7 +37,7 @@ type AppContextType = {
     certificateId?: string;
     message?: string;
   };
-  createEvent: (data: Omit<EventItem, "id" | "registered" | "attended">) => EventItem;
+  createEvent: (data: Omit<EventItem, "id" | "registered" | "attended">) => Promise<EventItem>;
   updateEvent: (id: string, updates: Partial<EventItem>) => void;
   deleteEvent: (id: string) => void;
   deleteAllEvents: () => void;
@@ -47,7 +45,7 @@ type AppContextType = {
   createPlaylist: (data: Omit<Playlist, "id" | "eventCount">) => void;
   updatePlaylist: (id: string, updates: Partial<Omit<Playlist, "id">>) => void;
   deletePlaylist: (id: string) => void;
-  createBlogPost: (data: Omit<BlogPost, "id">) => void;
+  createBlogPost: (data: Omit<BlogPost, "id">) => Promise<BlogPost>;
   updateBlogPost: (id: string, updates: Partial<BlogPost>) => void;
   deleteBlogPost: (id: string) => void;
   deleteAllBlogPosts: () => void;
@@ -62,13 +60,14 @@ type AppContextType = {
 
 const AppContext = createContext<AppContextType | null>(null);
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   EVENTS: "aether_events_v1",
   EVENTS_CLEARED: "aether_events_cleared_v1",
   PLAYLISTS: "aether_playlists_v1",
   MY_EVENTS: "aether_my_events_v1",
   ATTENDEES: "aether_attendees_v1",
   BLOGS: "aether_blogs_v1",
+  BLOGS_CLEARED: "aether_blogs_cleared_v1",
   USER: "aether_current_user_v1",
 };
 
@@ -83,7 +82,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const isCleared = localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
     if (isCleared) return [];
     const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    return saved ? JSON.parse(saved) : initialEvents;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    // Jika Supabase terkonfigurasi, default ke empty sampai fetch selesai agar tidak memunculkan data dummy lama
+    if (isSupabaseConfigured) return [];
+    return initialEvents;
   });
 
   const [playlists, setPlaylists] = useState<Playlist[]>(() => {
@@ -111,9 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [myEvents, setMyEvents] = useState<MyEvent[]>(() => {
     if (typeof window === "undefined") return [];
-    // If no user is logged in, unauthenticated users have 0 registered events
     const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
-    // Clean up any legacy unauthenticated mock data stored under the global key
     try {
       localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
     } catch {}
@@ -142,8 +146,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
     if (typeof window === "undefined") return initialBlogPosts;
+    const isCleared = localStorage.getItem(STORAGE_KEYS.BLOGS_CLEARED) === "true";
+    if (isCleared) return [];
     const saved = localStorage.getItem(STORAGE_KEYS.BLOGS);
-    return saved ? JSON.parse(saved) : initialBlogPosts;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    // Jika Supabase terkonfigurasi, default ke empty sampai fetch selesai agar tidak memunculkan data dummy lama
+    if (isSupabaseConfigured) return [];
+    return initialBlogPosts;
   });
 
   const loginUser = (user: { name: string; email: string; role: "Peserta" | "Speaker / Host" | "Super Admin" | string }) => {
@@ -170,6 +183,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+      if (events.length === 0) {
+        localStorage.setItem(STORAGE_KEYS.EVENTS_CLEARED, "true");
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
+      }
     } catch {}
   }, [events]);
 
@@ -199,26 +217,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(blogPosts));
+      if (blogPosts.length === 0) {
+        localStorage.setItem(STORAGE_KEYS.BLOGS_CLEARED, "true");
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
+      }
     } catch {}
   }, [blogPosts]);
 
-  // Initial Sync from Supabase Cloud Database (if configured)
+  // Initial Sync from Supabase Cloud Database (for Events, Blogs & Registrations)
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
     let isMounted = true;
-    const isCleared =
-      typeof window !== "undefined" &&
-      localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
 
-    if (!isCleared) {
-      eventsApi.fetchAll().then((remoteEvents) => {
-        if (isMounted && remoteEvents && remoteEvents.length > 0) {
-          setEvents(remoteEvents);
-        }
-      });
-    }
+    // 1. Fetch Events from Supabase Cloud
+    eventsApi.fetchAll().then((remoteEvents) => {
+      if (isMounted && remoteEvents !== null) {
+        setEvents(remoteEvents);
+        try {
+          localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(remoteEvents));
+          if (remoteEvents.length === 0) {
+            localStorage.setItem(STORAGE_KEYS.EVENTS_CLEARED, "true");
+          } else {
+            localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
+          }
+        } catch {}
+      }
+    });
 
+    // 2. Fetch Blogs from Supabase Cloud
+    blogsApi.fetchAll().then((remoteBlogs) => {
+      if (isMounted && remoteBlogs !== null) {
+        setBlogPosts(remoteBlogs);
+        try {
+          localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(remoteBlogs));
+          if (remoteBlogs.length === 0) {
+            localStorage.setItem(STORAGE_KEYS.BLOGS_CLEARED, "true");
+          } else {
+            localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
+          }
+        } catch {}
+      }
+    });
+
+    // 3. Fetch User Registrations if logged in
     registrationsApi.getMyRegistrations().then((remoteRegs) => {
       if (isMounted && remoteRegs && remoteRegs.length > 0) {
         setMyEvents(remoteRegs);
@@ -277,7 +320,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setAttendees((prev) => [newAttendee, ...prev]);
 
-    // Asynchronous background sync to Supabase if configured
     if (isSupabaseConfigured) {
       registrationsApi.register(eventId, paid).catch((err) => {
         console.warn("[Supabase Sync] Gagal mendaftarkan event:", err);
@@ -313,7 +355,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const resolvedEventId = targetEvent.id;
 
-    // Validate code if targetEvent has an attendanceCode and code is given
     if (targetEvent.attendanceCode && code) {
       const inputCode = code.trim().toUpperCase();
       const expectedCode = targetEvent.attendanceCode.trim().toUpperCase();
@@ -325,7 +366,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Check if already attended
     const existingRegistration = myEvents.find((me) => me.eventId === resolvedEventId);
     if (existingRegistration?.attended && existingRegistration.certificateId) {
       return {
@@ -389,11 +429,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const createEvent = (data: Omit<EventItem, "id" | "registered" | "attended">) => {
-    const newId = `ev-${Date.now()}`;
-    const newEvent: EventItem = {
+  const createEvent = async (data: Omit<EventItem, "id" | "registered" | "attended">) => {
+    const tempId = `ev-${Date.now()}`;
+    let newEvent: EventItem = {
       ...data,
-      id: newId,
+      id: tempId,
       registered: 0,
       attended: 0,
     };
@@ -405,17 +445,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ),
     );
 
-    if (isSupabaseConfigured) {
-      eventsApi.create(data).then((created) => {
-        if (created) {
-          setEvents((prev) => prev.map((e) => (e.id === newId ? created : e)));
-        }
-      });
-    }
-
     try {
       localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
     } catch {}
+
+    if (isSupabaseConfigured) {
+      try {
+        const created = await eventsApi.create(data);
+        if (created) {
+          newEvent = created;
+          setEvents((prev) => prev.map((e) => (e.id === tempId ? created : e)));
+        }
+      } catch (err) {
+        console.error("[createEvent] Cloud create error:", err);
+      }
+    }
 
     return newEvent;
   };
@@ -437,7 +481,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return updated;
     });
-    deleteEventServerFn({ data: id }).catch(console.error);
     if (isSupabaseConfigured) {
       eventsApi.delete(id).catch(console.error);
     }
@@ -455,7 +498,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify([]));
       localStorage.setItem(STORAGE_KEYS.EVENTS_CLEARED, "true");
     } catch {}
-    deleteAllEventsServerFn().catch(console.error);
     if (isSupabaseConfigured) {
       eventsApi.deleteAll().catch(console.error);
     }
@@ -488,15 +530,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPlaylists((prev) => prev.filter((pl) => pl.id !== id));
   };
 
-  const createBlogPost = (data: Omit<BlogPost, "id">) => {
-    const newPost: BlogPost = {
+  const createBlogPost = async (data: Omit<BlogPost, "id">) => {
+    const tempId = `bp-${Date.now()}`;
+    let newPost: BlogPost = {
       ...data,
-      id: `bp-${Date.now()}`,
+      id: tempId,
     };
+
     setBlogPosts((prev) => [newPost, ...prev]);
+
+    try {
+      localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
+    } catch {}
+
     if (isSupabaseConfigured) {
-      blogsApi.create(data).catch(console.error);
+      try {
+        const created = await blogsApi.create(data);
+        if (created) {
+          newPost = created;
+          setBlogPosts((prev) => prev.map((p) => (p.id === tempId ? created : p)));
+        }
+      } catch (err) {
+        console.error("[createBlogPost] Cloud create error:", err);
+      }
     }
+
+    return newPost;
   };
 
   const updateBlogPost = (id: string, updates: Partial<BlogPost>) => {
@@ -507,7 +566,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteBlogPost = (id: string) => {
-    setBlogPosts((prev) => prev.filter((p) => p.id !== id));
+    setBlogPosts((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      if (updated.length === 0) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.BLOGS_CLEARED, "true");
+        } catch {}
+      }
+      return updated;
+    });
     if (isSupabaseConfigured) {
       blogsApi.delete(id).catch(console.error);
     }
@@ -517,6 +584,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBlogPosts([]);
     try {
       localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.BLOGS_CLEARED, "true");
     } catch {}
     if (isSupabaseConfigured) {
       blogsApi.deleteAll().catch(console.error);
@@ -527,6 +595,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBlogPosts(initialBlogPosts);
     try {
       localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(initialBlogPosts));
+      localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
     } catch {}
   };
 
@@ -540,6 +609,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(initialEvents));
       localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(initialBlogPosts));
       localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(initialAttendees));
+      localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
+      localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
       localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
       if (currentUser?.email) {
         const userKey = getUserRegistrationsKey(currentUser.email);

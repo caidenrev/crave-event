@@ -36,7 +36,9 @@ function AdminNewBlogPage() {
     setSlug(generatedSlug);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -44,30 +46,37 @@ function AdminNewBlogPage() {
       return;
     }
 
-    const paragraphs = bodyText
-      .split("\n\n")
-      .map((p) => p.trim())
-      .filter(Boolean);
+    setLoading(true);
+    try {
+      const paragraphs = bodyText
+        .split("\n\n")
+        .map((p) => p.trim())
+        .filter(Boolean);
 
-    createBlogPost({
-      slug: slug || `post-${Date.now()}`,
-      title,
-      tag,
-      excerpt: excerpt || "Artikel pembelajaran dan materi webinar Crave Event.",
-      body: paragraphs.length ? paragraphs : [excerpt],
-      readMinutes: Number(readMinutes) || 4,
-      cover,
-      publishedAt: new Date().toISOString().split("T")[0]!,
-      status,
-    });
+      await createBlogPost({
+        slug: slug || `post-${Date.now()}`,
+        title,
+        tag,
+        excerpt: excerpt || "Artikel pembelajaran dan materi webinar Crave Event.",
+        body: paragraphs.length ? paragraphs : [excerpt],
+        readMinutes: Number(readMinutes) || 4,
+        cover,
+        publishedAt: new Date().toISOString().split("T")[0]!,
+        status,
+      });
 
-    toast.success("Artikel Berhasil Dibuat!", {
-      description: `"${title}" telah ${
-        status === "published" ? "dipublikasikan di portal blog" : "tersimpan sebagai draf"
-      }.`,
-    });
+      toast.success("Artikel Berhasil Dibuat!", {
+        description: `"${title}" telah ${
+          status === "published" ? "dipublikasikan di portal blog" : "tersimpan sebagai draf"
+        }.`,
+      });
 
-    navigate({ to: "/admin/blog" });
+      navigate({ to: "/admin/blog" });
+    } catch (err: any) {
+      toast.error("Gagal membuat artikel: " + (err?.message || "Terjadi kesalahan."));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

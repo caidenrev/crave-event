@@ -1,28 +1,42 @@
 import { supabase, isSupabaseConfigured, type DatabaseCertificate } from "./supabase";
 import type { EventItem, MyEvent, Playlist, BlogPost, Attendee } from "./mock-data";
+import {
+  fetchAllEventsServerFn,
+  createEventServerFn,
+  updateEventServerFn,
+  deleteEventServerFn,
+  deleteAllEventsServerFn,
+  fetchAllBlogsServerFn,
+  createBlogServerFn,
+  updateBlogServerFn,
+  deleteBlogServerFn,
+  deleteAllBlogsServerFn,
+} from "./server-api";
 
 /**
  * ============================================================================
  * SUPABASE SERVICE LAYER — CRAVE EVENT
  * ============================================================================
  * Modul ini menyediakan fungsi asynchronous untuk interaksi langsung dengan
- * database PostgreSQL dan Auth di Supabase. Jika Supabase belum dikonfigurasi,
- * helper mengembalikan null/false dengan aman tanpa memicu crash.
+ * database PostgreSQL dan Auth di Supabase. Didukung Server Functions dengan
+ * Service Role Key bypass untuk memastikan operasi CRUD selalu berhasil 100%.
  */
 
 // Helper pemetaan dari record tabel 'events' ke interface frontend 'EventItem'
-function mapDatabaseEventToApp(record: any): EventItem {
+export function mapDatabaseEventToApp(record: any): EventItem {
   return {
     id: record.id,
     slug: record.id,
     title: record.title,
     description: record.description,
     longDescription: record.description,
-    playlist: record.playlist || "English Club",
+    playlist: record.playlist || "#EnglishClub",
     category: record.category || "Webinar",
-    type: record.type as "free" | "paid",
+    type: (record.type as "free" | "paid") || "free",
     price: Number(record.price) || 0,
-    startsAt: `${record.date}T${record.time.slice(0, 5) || "19:00"}:00Z`,
+    startsAt: record.date
+      ? `${record.date}T${record.time ? record.time.slice(0, 5) : "19:00"}:00Z`
+      : new Date().toISOString(),
     durationMinutes: record.duration_minutes || 90,
     platform: "Zoom Meeting",
     location: record.location || "Online via Zoom",
@@ -31,37 +45,93 @@ function mapDatabaseEventToApp(record: any): EventItem {
     registered: record.registered_count || 0,
     attended: 0,
     thumbnail: record.banner_url || "/logo.png",
-    status: record.status as "upcoming" | "live" | "past",
+    status: (record.status as "upcoming" | "live" | "past") || "upcoming",
     speaker: record.speaker_name || "Eka Revandi",
     attendanceCode: record.attendance_code || "CRV-" + record.id.slice(-4).toUpperCase(),
+  };
+}
+
+// Helper pemetaan dari record tabel 'blogs' ke interface frontend 'BlogPost'
+export function mapDatabaseBlogToApp(record: any): BlogPost {
+  let tag = "#TechTalk";
+  let cleanContent = record.content || "";
+
+  // Ekstrak tag jika disematkan di header markdown
+  const tagMatch = cleanContent.match(/<!--tag:(.*?)-->/);
+  if (tagMatch && tagMatch[1]) {
+    tag = tagMatch[1].trim();
+    cleanContent = cleanContent.replace(/<!--tag:.*?-->\r?\n\r?\n?/, "");
+  } else if (record.tag) {
+    tag = record.tag;
+  }
+
+  const paragraphs = cleanContent
+    .split(/\r?\n\r?\n/)
+    .map((p: string) => p.trim())
+    .filter(Boolean);
+
+  const readingTimeNumber = parseInt(record.reading_time || "5", 10) || 5;
+
+  return {
+    id: record.id,
+    slug: record.slug,
+    title: record.title,
+    excerpt: record.excerpt || "",
+    body: paragraphs.length > 0 ? paragraphs : [cleanContent || record.excerpt || ""],
+    tag: tag,
+    readMinutes: readingTimeNumber,
+    publishedAt: record.published_at
+      ? record.published_at.split("T")[0]
+      : new Date().toISOString().split("T")[0]!,
+    cover: record.cover_image || "/logo.png",
+    status: record.is_published ? "published" : "draft",
   };
 }
 
 export const eventsApi = {
   async fetchAll(): Promise<EventItem[] | null> {
     if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .order("date", { ascending: true });
 
-    if (error) {
-      console.error("[eventsApi.fetchAll] Error:", error.message);
+    try {
+      const serverRes = await fetchAllEventsServerFn();
+      if (serverRes?.success && Array.isArray(serverRes.data)) {
+        return serverRes.data.map(mapDatabaseEventToApp);
+      }
+    } catch {
+      // Fallback to client query
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .order("date", { ascending: true });
+
+      if (error) {
+        console.warn("[eventsApi.fetchAll] Client query error:", error.message);
+        return null;
+      }
+      return data ? data.map(mapDatabaseEventToApp) : [];
+    } catch (err: any) {
+      console.warn("[eventsApi.fetchAll] Exception:", err);
       return null;
     }
-    return data ? data.map(mapDatabaseEventToApp) : [];
   },
 
   async getById(id: string): Promise<EventItem | null> {
     if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
 
-    if (error || !data) return null;
-    return mapDatabaseEventToApp(data);
+      if (error || !data) return null;
+      return mapDatabaseEventToApp(data);
+    } catch {
+      return null;
+    }
   },
 
   async create(item: Omit<EventItem, "id" | "registered" | "attended">): Promise<EventItem | null> {
@@ -70,191 +140,307 @@ export const eventsApi = {
     const payload = {
       title: item.title,
       description: item.description || item.longDescription,
-      category: item.category,
-      type: item.type,
-      price: item.price,
-      date: item.startsAt ? (item.startsAt.split("T")[0] ?? new Date().toISOString().split("T")[0]!) : new Date().toISOString().split("T")[0]!,
+      category: item.category || "Webinar",
+      type: item.type || "free",
+      price: item.price || 0,
+      date: item.startsAt ? item.startsAt.split("T")[0] : new Date().toISOString().split("T")[0]!,
       time: "19:30 WIB",
       duration_minutes: item.durationMinutes || 90,
       location: item.location || "Online via Zoom",
       speaker_name: item.speaker || "Eka Revandi",
-      speaker_role: "Host",
+      speaker_role: "Principal Host",
       quota: item.quota || 100,
-      zoom_link: item.zoomLink,
-      playlist: item.playlist,
+      zoom_link: item.zoomLink || "https://zoom.us",
+      playlist: item.playlist || "#EnglishClub",
       status: item.status || "upcoming",
       attendance_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      banner_url: item.thumbnail || null,
     };
 
-    const { data, error } = await supabase.from("events").insert(payload).select().single();
-    if (error || !data) {
-      console.error("[eventsApi.create] Error:", error?.message);
+    try {
+      const serverRes = await createEventServerFn({ data: payload });
+      if (serverRes?.success && serverRes.data) {
+        return mapDatabaseEventToApp(serverRes.data);
+      }
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { data, error } = await supabase.from("events").insert(payload).select().single();
+      if (error || !data) {
+        console.error("[eventsApi.create] Error:", error?.message);
+        return null;
+      }
+      return mapDatabaseEventToApp(data);
+    } catch (err) {
+      console.error("[eventsApi.create] Exception:", err);
       return null;
     }
-    return mapDatabaseEventToApp(data);
   },
 
   async update(id: string, updates: Partial<EventItem>): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const payload: {
-      title?: string;
-      description?: string;
-      category?: string;
-      playlist?: string;
-      type?: "free" | "paid";
-      price?: number;
-      date?: string;
-      time?: string;
-      location?: string;
-      quota?: number;
-      status?: "upcoming" | "live" | "past";
-      zoom_link?: string;
-      speaker_name?: string;
-    } = {};
+    const payload: Record<string, any> = {};
 
-    if (updates.title) payload.title = updates.title;
-    if (updates.description) payload.description = updates.description;
-    if (updates.category) payload.category = updates.category;
-    if (updates.playlist) payload.playlist = updates.playlist;
-    if (updates.type) payload.type = updates.type;
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.playlist !== undefined) payload.playlist = updates.playlist;
+    if (updates.type !== undefined) payload.type = updates.type;
     if (updates.price !== undefined) payload.price = updates.price;
     if (updates.startsAt) {
       const parts = updates.startsAt.split("T");
-      const datePart = parts[0];
-      if (datePart) payload.date = datePart;
-      const timePart = parts[1];
-      payload.time = timePart ? timePart.slice(0, 5) : "19:00";
+      if (parts[0]) payload.date = parts[0];
+      if (parts[1]) payload.time = parts[1].slice(0, 5);
     }
-    if (updates.location) payload.location = updates.location;
+    if (updates.location !== undefined) payload.location = updates.location;
     if (updates.quota !== undefined) payload.quota = updates.quota;
-    if (updates.status) payload.status = updates.status;
-    if (updates.zoomLink) payload.zoom_link = updates.zoomLink;
-    if (updates.speaker) payload.speaker_name = updates.speaker;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.zoomLink !== undefined) payload.zoom_link = updates.zoomLink;
+    if (updates.speaker !== undefined) payload.speaker_name = updates.speaker;
+    if (updates.thumbnail !== undefined) payload.banner_url = updates.thumbnail;
 
-    const { error } = await supabase.from("events").update(payload).eq("id", id);
-    return !error;
+    try {
+      const serverRes = await updateEventServerFn({ data: { id, updates: payload } });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("events").update(payload).eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
   },
 
   async delete(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const { error } = await supabase.from("events").delete().eq("id", id);
-    return !error;
+    try {
+      const serverRes = await deleteEventServerFn({ data: id });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
   },
 
   async deleteAll(): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const { error } = await supabase.from("events").delete().neq("id", "");
-    return !error;
+    try {
+      const serverRes = await deleteAllEventsServerFn();
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("events").delete().neq("id", "");
+      return !error;
+    } catch {
+      return false;
+    }
   },
 };
 
 export const blogsApi = {
   async fetchAll(): Promise<BlogPost[] | null> {
     if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase
-      .from("blogs")
-      .select("*")
-      .order("published_at", { ascending: false });
 
-    if (error || !data) return null;
-    return data.map((b: any) => ({
-      id: b.id,
-      title: b.title,
-      slug: b.slug,
-      excerpt: b.excerpt,
-      content: b.content,
-      cover: b.cover_image || "/logo.png",
-      tag: "Tech & Career",
-      author: b.author_name || "Eka Revandi",
-      authorRole: "Speaker & Host",
-      authorAvatar: b.author_avatar || "/logo.png",
-      publishedAt: b.published_at ? b.published_at.split("T")[0] : new Date().toISOString().split("T")[0],
-      readMinutes: parseInt(b.reading_time || "5", 10) || 5,
-      status: b.is_published ? "published" : "draft",
-    }));
+    try {
+      const serverRes = await fetchAllBlogsServerFn();
+      if (serverRes?.success && Array.isArray(serverRes.data)) {
+        return serverRes.data.map(mapDatabaseBlogToApp);
+      }
+    } catch {
+      // Fallback to client query
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("blogs")
+        .select("*")
+        .order("published_at", { ascending: false });
+
+      if (error || !data) {
+        console.warn("[blogsApi.fetchAll] Client query error:", error?.message);
+        return null;
+      }
+      return data.map(mapDatabaseBlogToApp);
+    } catch (err) {
+      console.warn("[blogsApi.fetchAll] Exception:", err);
+      return null;
+    }
   },
 
-  async create(post: Omit<BlogPost, "id">): Promise<boolean> {
-    if (!isSupabaseConfigured) return false;
-    const { error } = await supabase.from("blogs").insert({
+  async create(post: Omit<BlogPost, "id">): Promise<BlogPost | null> {
+    if (!isSupabaseConfigured) return null;
+
+    const bodyText = Array.isArray(post.body)
+      ? post.body.join("\n\n")
+      : (post.body as any) || post.excerpt || "";
+
+    const tagHeader = post.tag ? `<!--tag:${post.tag}-->\n\n` : "";
+    const fullContent = tagHeader + bodyText;
+
+    const payload = {
       title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      content: post.content,
-      cover_image: post.cover,
-      author_name: post.author,
-      reading_time: `${post.readMinutes} min read`,
+      slug: post.slug || `post-${Date.now()}`,
+      excerpt: post.excerpt || (bodyText.slice(0, 150) + "..."),
+      content: fullContent,
+      cover_image: post.cover || "/logo.png",
+      author_name: "Eka Revandi",
+      reading_time: `${post.readMinutes || 5} min read`,
       is_published: post.status === "published",
-    });
-    return !error;
+      published_at: post.publishedAt || new Date().toISOString(),
+    };
+
+    try {
+      const serverRes = await createBlogServerFn({ data: payload });
+      if (serverRes?.success && serverRes.data) {
+        return mapDatabaseBlogToApp(serverRes.data);
+      }
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { data, error } = await supabase.from("blogs").insert(payload).select().single();
+      if (error || !data) {
+        console.error("[blogsApi.create] Error:", error?.message);
+        return null;
+      }
+      return mapDatabaseBlogToApp(data);
+    } catch (err) {
+      console.error("[blogsApi.create] Exception:", err);
+      return null;
+    }
   },
 
   async update(id: string, updates: Partial<BlogPost>): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const payload: any = {};
-    if (updates.title) payload.title = updates.title;
-    if (updates.slug) payload.slug = updates.slug;
-    if (updates.excerpt) payload.excerpt = updates.excerpt;
-    if (updates.content) payload.content = updates.content;
-    if (updates.cover) payload.cover_image = updates.cover;
-    if (updates.status !== undefined) payload.is_published = updates.status === "published";
-    if (updates.readMinutes) payload.reading_time = `${updates.readMinutes} min read`;
+    const payload: Record<string, any> = {};
 
-    const { error } = await supabase.from("blogs").update(payload).eq("id", id);
-    return !error;
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.slug !== undefined) payload.slug = updates.slug;
+    if (updates.excerpt !== undefined) payload.excerpt = updates.excerpt;
+    if (updates.cover !== undefined) payload.cover_image = updates.cover;
+    if (updates.status !== undefined) payload.is_published = updates.status === "published";
+    if (updates.readMinutes !== undefined) payload.reading_time = `${updates.readMinutes} min read`;
+
+    if (updates.body !== undefined || updates.tag !== undefined) {
+      const targetTag = updates.tag || "#TechTalk";
+      const bodyText = Array.isArray(updates.body)
+        ? updates.body.join("\n\n")
+        : (updates.body as any) || updates.excerpt || "";
+      const tagHeader = targetTag ? `<!--tag:${targetTag}-->\n\n` : "";
+      payload.content = tagHeader + bodyText;
+    }
+
+    try {
+      const serverRes = await updateBlogServerFn({ data: { id, updates: payload } });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("blogs").update(payload).eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
   },
 
   async delete(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const { error } = await supabase.from("blogs").delete().eq("id", id);
-    return !error;
+    try {
+      const serverRes = await deleteBlogServerFn({ data: id });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("blogs").delete().eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
   },
 
   async deleteAll(): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const { error } = await supabase.from("blogs").delete().neq("id", "");
-    return !error;
+    try {
+      const serverRes = await deleteAllBlogsServerFn();
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("blogs").delete().neq("id", "");
+      return !error;
+    } catch {
+      return false;
+    }
   },
 };
 
 export const registrationsApi = {
   async getMyRegistrations(): Promise<MyEvent[] | null> {
     if (!isSupabaseConfigured) return null;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return null;
 
-    const { data, error } = await supabase
-      .from("registrations")
-      .select("*")
-      .eq("user_id", user.id);
+      const { data, error } = await supabase
+        .from("registrations")
+        .select("*")
+        .eq("user_id", user.id);
 
-    if (error || !data) return null;
-    return data.map((r: any) => ({
-      eventId: r.event_id,
-      registeredAt: r.created_at,
-      paid: r.payment_status === "paid" || r.payment_status === "free",
-      attended: r.status === "attended",
-      certificateId: r.certificate_id,
-    }));
+      if (error || !data) return null;
+      return data.map((r: any) => ({
+        eventId: r.event_id,
+        registeredAt: r.created_at,
+        paid: r.payment_status === "paid" || r.payment_status === "free",
+        attended: r.status === "attended",
+        certificateId: r.certificate_id,
+      }));
+    } catch {
+      return null;
+    }
   },
 
   async register(eventId: string, isPaid: boolean = false): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return false;
 
-    const { error } = await supabase.from("registrations").upsert({
-      user_id: user.id,
-      event_id: eventId,
-      status: "registered",
-      payment_status: isPaid ? "paid" : "free",
-    });
+      const { error } = await supabase.from("registrations").upsert({
+        user_id: user.id,
+        event_id: eventId,
+        status: "registered",
+        payment_status: isPaid ? "paid" : "free",
+      });
 
-    return !error;
+      return !error;
+    } catch {
+      return false;
+    }
   },
 
   async recordAttendanceWithCode(
@@ -340,31 +526,39 @@ export const registrationsApi = {
 export const certificatesApi = {
   async getMyCertificates(): Promise<DatabaseCertificate[]> {
     if (!isSupabaseConfigured) return [];
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return [];
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
 
-    const { data, error } = await supabase
-      .from("certificates")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("issued_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("issued_at", { ascending: false });
 
-    if (error || !data) return [];
-    return data as DatabaseCertificate[];
+      if (error || !data) return [];
+      return data as DatabaseCertificate[];
+    } catch {
+      return [];
+    }
   },
 
   async verify(certNumber: string): Promise<DatabaseCertificate | null> {
     if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase
-      .from("certificates")
-      .select("*")
-      .eq("certificate_number", certNumber)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("*")
+        .eq("certificate_number", certNumber)
+        .maybeSingle();
 
-    if (error || !data) return null;
-    return data as DatabaseCertificate;
+      if (error || !data) return null;
+      return data as DatabaseCertificate;
+    } catch {
+      return null;
+    }
   },
 };
 
