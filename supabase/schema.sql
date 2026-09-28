@@ -396,3 +396,57 @@ create policy "Allow delete from crave-media"
 on storage.objects for delete
 using (bucket_id = 'crave-media');
 
+-- ==============================================================================
+-- 11. TRIGGER: OTOMATISASI PEMBUATAN PROFIL SAAT USER MENDAFTAR (AUTH.USERS)
+-- ==============================================================================
+create or replace function public.handle_new_user()
+returns trigger
+security definer
+set search_path = public, pg_temp
+language plpgsql
+as $$
+declare
+  v_role user_role := 'user';
+  v_meta_role text;
+  v_name text;
+begin
+  v_meta_role := lower(trim(coalesce(new.raw_user_meta_data->>'role', '')));
+  v_name := coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1));
+
+  if v_meta_role in ('admin', 'speaker', 'host') then
+    v_role := 'admin';
+  elsif v_meta_role in ('superadmin', 'super_admin', 'root') or new.email ilike '%superadmin%' or new.email ilike '%root%' then
+    v_role := 'superadmin';
+  else
+    v_role := 'user';
+  end if;
+
+  insert into public.profiles (id, name, email, role, created_at, updated_at)
+  values (new.id, v_name, new.email, v_role, now(), now())
+  on conflict (id) do update
+  set name = excluded.name,
+      email = excluded.email,
+      role = excluded.role,
+      updated_at = now();
+
+  return new;
+exception
+  when others then
+    raise warning 'handle_new_user trigger error: %', sqlerrm;
+    return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Permissions for internal Supabase Auth Admin & API roles
+grant usage on schema public to supabase_auth_admin, anon, authenticated, service_role;
+grant all on all tables in schema public to supabase_auth_admin, anon, authenticated, service_role;
+grant all on all sequences in schema public to supabase_auth_admin, anon, authenticated, service_role;
+grant all on all routines in schema public to supabase_auth_admin, anon, authenticated, service_role;
+grant usage on type public.user_role to supabase_auth_admin, anon, authenticated, service_role;
+
+

@@ -22,6 +22,7 @@ import {
   registrationsApi,
   blogsApi,
   playlistsApi,
+  authApi,
   mapDatabaseEventToApp,
   mapDatabaseBlogToApp,
   mapDatabasePlaylistToApp,
@@ -252,6 +253,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
     } catch {}
+    if (isSupabaseConfigured) {
+      authApi.signOut().catch(() => {});
+    }
   };
 
   useEffect(() => {

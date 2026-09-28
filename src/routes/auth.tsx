@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, Presentation, ShieldAl
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useApp, getRegisteredUsers, saveRegisteredUser } from "../lib/store";
-import { isSupabaseConfigured } from "../lib/supabase";
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { authApi } from "../lib/supabase-services";
 
 type AuthSearch = {
@@ -53,35 +53,68 @@ function AuthPage() {
     try {
       if (mode === "login") {
         let authenticatedUser: { name: string; email: string; role: string } | null = null;
+        let accountExistsInDatabase = false;
 
         // 1. Check with Supabase Auth if configured
         if (isSupabaseConfigured) {
           try {
             const res = await authApi.signIn(cleanEmail, cleanPassword);
             if (res?.data?.user) {
-              const metaRole = res.data.user.user_metadata?.["role"] as string | undefined;
-              const metaName = res.data.user.user_metadata?.["full_name"] as string | undefined;
-              const isSuper = cleanEmail.includes("superadmin") || cleanEmail.includes("root");
+              accountExistsInDatabase = true;
+              const user = res.data.user;
+
+              // Fetch synced profile if available
+              let dbRole: string | null = null;
+              let dbName: string | null = null;
+              try {
+                const { data: prof } = await supabase
+                  .from("profiles")
+                  .select("name, role")
+                  .eq("id", user.id)
+                  .maybeSingle();
+                if (prof) {
+                  dbRole = prof.role;
+                  dbName = prof.name;
+                }
+              } catch {}
+
+              const metaRole = user.user_metadata?.["role"] as string | undefined;
+              const metaName = user.user_metadata?.["full_name"] as string | undefined;
+              const isSuper = cleanEmail.includes("superadmin") || cleanEmail.includes("root") || dbRole === "superadmin";
+              const isSpeakerRole = isSuper || dbRole === "admin" || metaRole === "speaker" || metaRole === "admin";
               const roleName = isSuper
                 ? "Super Admin"
-                : metaRole === "speaker"
+                : isSpeakerRole
                   ? "Speaker / Host"
                   : "Peserta";
               const userName =
-                metaName || (isSuper ? "Super Admin" : cleanEmail.split("@")[0] || "Peserta");
+                dbName || metaName || (isSuper ? "Super Admin" : cleanEmail.split("@")[0] || "Peserta");
 
               authenticatedUser = {
                 name: userName,
-                email: res.data.user.email || cleanEmail,
+                email: user.email || cleanEmail,
                 role: roleName,
               };
 
               saveRegisteredUser({
                 email: cleanEmail,
                 name: userName,
+                password: cleanPassword,
                 role: roleName,
                 registeredAt: new Date().toISOString(),
               });
+            } else if (res?.error) {
+              // Check if account actually exists in Supabase profiles
+              try {
+                const { data: prof } = await supabase
+                  .from("profiles")
+                  .select("id, name, email, role")
+                  .ilike("email", cleanEmail)
+                  .maybeSingle();
+                if (prof) {
+                  accountExistsInDatabase = true;
+                }
+              } catch {}
             }
           } catch (err: any) {
             console.warn("[Auth Supabase Sync]:", err.message);
@@ -89,30 +122,34 @@ function AuthPage() {
         }
 
         // 2. Check in local registered users registry
-        if (!authenticatedUser) {
-          const localUsers = getRegisteredUsers();
-          const found = localUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+        const localUsers = getRegisteredUsers();
+        const found = localUsers.find((u) => u.email.toLowerCase() === cleanEmail);
 
-          if (found) {
-            if (!found.password || found.password === cleanPassword || cleanPassword.length >= 6) {
+        if (found) {
+          accountExistsInDatabase = true;
+          if (!authenticatedUser) {
+            if (!found.password || found.password === cleanPassword) {
               authenticatedUser = {
                 name: found.name,
                 email: found.email,
                 role: found.role,
               };
-            } else {
-              setErrorMessage("Kata sandi yang Anda masukkan salah. Silakan coba lagi.");
-              toast.error("Kata Sandi Salah!", {
-                description: "Periksa kembali kata sandi yang Anda masukkan.",
-              });
-              setLoading(false);
-              return;
             }
           }
         }
 
-        // 3. If account is NOT registered, BLOCK LOGIN and require registration!
+        // 3. Handle wrong password vs truly unregistered account
         if (!authenticatedUser) {
+          if (accountExistsInDatabase) {
+            const msg = "Kata sandi yang Anda masukkan salah. Silakan periksa kembali kata sandi Anda.";
+            setErrorMessage(msg);
+            toast.error("Kata Sandi Salah!", {
+              description: "Periksa kembali kata sandi yang Anda masukkan.",
+            });
+            setLoading(false);
+            return;
+          }
+
           const msg = `Akun dengan email "${cleanEmail}" belum terdaftar! Silakan lakukan Registrasi terlebih dahulu untuk menentukan peran (Peserta atau Speaker).`;
           setErrorMessage(msg);
           toast.error("Akun Belum Terdaftar!", {
@@ -204,6 +241,7 @@ function AuthPage() {
             if (res.error) {
               if (
                 res.error.message?.toLowerCase().includes("already registered") ||
+                res.error.message?.toLowerCase().includes("already exists") ||
                 res.error.message?.toLowerCase().includes("exists")
               ) {
                 toast.info("Email Sudah Terdaftar!", {
@@ -214,13 +252,28 @@ function AuthPage() {
                 setLoading(false);
                 return;
               }
+              console.warn("[Auth Supabase Sync]:", res.error.message);
+            }
+
+            // Guarantee profile exists in Supabase
+            if (res?.data?.user?.id) {
+              const dbRole = isSuper ? "superadmin" : (selectedRole === "speaker" ? "admin" : "user");
+              try {
+                await supabase.from("profiles").upsert({
+                  id: res.data.user.id,
+                  name: userName,
+                  email: cleanEmail,
+                  role: dbRole,
+                  updated_at: new Date().toISOString(),
+                });
+              } catch {}
             }
           } catch (err: any) {
             console.warn("[Auth Supabase Sync]:", err.message);
           }
         }
 
-        // Save into local registered accounts store
+        // Save into local registered accounts store with password
         saveRegisteredUser({
           email: cleanEmail,
           name: userName,
