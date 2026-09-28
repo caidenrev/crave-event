@@ -7,9 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Menghasilkan base domain publik yang bersih untuk di-share.
- * Jika pengguna sedang mengakses Vercel Preview Deployment URL (misal: crave-event-leoz9pkqa-eka-revandis-projects.vercel.app),
- * helper ini otomatis menormalkan ke domain production utama (https://crave-event.vercel.app)
- * agar penerima tautan / publik tidak dicegat oleh prompt login Vercel Authentication.
+ * Memastikan domain yang dihasilkan adalah domain produksi resmi: https://crave-event.vercel.app
+ * tanpa terpotong atau mengarah ke domain preview Vercel / domain lain.
  */
 export function getCanonicalSiteUrl(): string {
   if (typeof window === "undefined") return "https://crave-event.vercel.app";
@@ -22,15 +21,14 @@ export function getCanonicalSiteUrl(): string {
   const origin = window.location.origin;
   const hostname = window.location.hostname;
 
-  // Jika di localhost / staging internal IP
+  // Jika sedang testing di localhost
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return origin;
   }
 
-  // Deteksi Vercel Preview Deployment URL: e.g. crave-event-leoz9pkqa-eka-revandis-projects.vercel.app
-  if (hostname.includes(".vercel.app") && hostname.includes("-")) {
-    const projectName = hostname.split("-")[0] || "crave-event";
-    return `https://${projectName}.vercel.app`;
+  // Jika di Vercel (apapun preview URL-nya), selalu arahkan ke domain production resmi crave-event.vercel.app
+  if (hostname.endsWith(".vercel.app")) {
+    return "https://crave-event.vercel.app";
   }
 
   return origin;
@@ -68,7 +66,6 @@ export async function shareContent(data: {
       if (err.name === "AbortError") {
         return { shared: false, copied: false };
       }
-      // Jika share dibatalkan/gagal, fallback ke clipboard
     }
   }
 
