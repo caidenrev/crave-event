@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { PageHeader } from "../../components/aether/dashboard-shell";
 import { Badge, Button } from "../../components/aether/primitives";
 import { useApp } from "../../lib/store";
-import type { Playlist } from "../../lib/mock-data";
+import { isPlaylistMatch, type Playlist } from "../../lib/mock-data";
 
 export const Route = createFileRoute("/admin/playlists")({
   component: AdminPlaylistsPage,
@@ -27,6 +27,7 @@ function AdminPlaylistsPage() {
   const {
     playlists,
     events,
+    blogPosts,
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
@@ -151,8 +152,9 @@ function AdminPlaylistsPage() {
       {/* Playlist Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {playlists.map((pl) => {
-          const connectedEvents = events.filter((e) => e.playlist === pl.tag);
-          const count = connectedEvents.length;
+          const connectedEvents = events.filter((e) => isPlaylistMatch(e.playlist, pl.tag) || isPlaylistMatch(e.playlist, pl.title));
+          const connectedBlogs = blogPosts.filter((b) => isPlaylistMatch(b.tag, pl.tag) || isPlaylistMatch(b.tag, pl.title));
+          const totalConnected = connectedEvents.length + connectedBlogs.length;
 
           return (
             <div
@@ -165,7 +167,7 @@ function AdminPlaylistsPage() {
                     {pl.tag}
                   </span>
                   <span className="text-[12px] font-semibold text-ink-tertiary">
-                    {count} Event Terhubung
+                    {connectedEvents.length} Event · {connectedBlogs.length} Blog
                   </span>
                 </div>
 
@@ -173,6 +175,15 @@ function AdminPlaylistsPage() {
                 <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
                   {pl.description}
                 </p>
+
+                <div className="mt-3 flex items-center gap-2 text-[11px] text-ink-tertiary">
+                  <span className="rounded-md bg-surface/80 px-2 py-0.5 border border-hairline">
+                    {connectedEvents.length} Webinar
+                  </span>
+                  <span className="rounded-md bg-surface/80 px-2 py-0.5 border border-hairline">
+                    {connectedBlogs.length} Artikel
+                  </span>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-hairline flex items-center justify-between gap-2">

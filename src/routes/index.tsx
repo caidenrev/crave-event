@@ -268,9 +268,13 @@ function IndexPage() {
 
             <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {playlists.map((pl) => {
-                const count = events.filter(
+                const eventCount = events.filter(
                   (ev) => isPlaylistMatch(ev.playlist, pl.tag) || isPlaylistMatch(ev.playlist, pl.title),
                 ).length;
+                const blogCount = blogPosts.filter(
+                  (b) => isPlaylistMatch(b.tag, pl.tag) || isPlaylistMatch(b.tag, pl.title),
+                ).length;
+                const totalCount = eventCount + blogCount;
 
                 return (
                   <Link
@@ -283,7 +287,9 @@ function IndexPage() {
                       <div className="flex items-center justify-between">
                         <Badge tone="neutral">{pl.tag}</Badge>
                         <span className="text-[12px] font-semibold text-ink-tertiary">
-                          {count > 0 ? `${count} Event` : "Segera Hadir"}
+                          {totalCount > 0
+                            ? `${eventCount > 0 ? `${eventCount} Event` : ""}${eventCount > 0 && blogCount > 0 ? " · " : ""}${blogCount > 0 ? `${blogCount} Blog` : ""}`
+                            : "Segera Hadir"}
                         </span>
                       </div>
                       <h3 className="mt-4 text-[18px] font-semibold text-ink group-hover:text-accent transition-colors">
@@ -295,7 +301,7 @@ function IndexPage() {
                     </div>
                     <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4">
                       <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
-                        Lihat Jadwal &rarr;
+                        Jelajahi Playlist &rarr;
                       </span>
                     </div>
                   </Link>
