@@ -71,7 +71,7 @@ function BlogIndexPage() {
                     : { background: featuredPost?.cover || "linear-gradient(135deg, #0a84ff 0%, #0056b3 100%)" }
                 }
               />
-              <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
+              <div className="flex flex-1 flex-col justify-between p-5 sm:p-8">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="aether-meta rounded-pill bg-accent-tint px-3 py-1 font-semibold text-accent-strong">
@@ -87,15 +87,16 @@ function BlogIndexPage() {
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4 text-[13px] text-ink-tertiary">
-                  <div className="flex items-center gap-4">
-                    <span>{formatShortDate(featuredPost.publishedAt)}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3.5" />
-                      {featuredPost.readMinutes} menit baca
+                <div className="mt-5 sm:mt-6 flex items-center justify-between gap-2 border-t border-hairline pt-3.5 sm:pt-4 text-ink-tertiary">
+                  <div className="flex items-center gap-2 sm:gap-3.5 text-[11px] sm:text-[13px] text-ink-secondary">
+                    <span className="whitespace-nowrap">{formatShortDate(featuredPost.publishedAt)}</span>
+                    <span className="text-hairline">·</span>
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Clock className="size-3 sm:size-3.5 text-accent shrink-0" />
+                      <span>{featuredPost.readMinutes} mnt baca</span>
                     </span>
                   </div>
-                  <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
+                  <span className="neu-btn-blue px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-semibold text-white shadow-xs whitespace-nowrap shrink-0">
                     Baca Selengkapnya &rarr;
                   </span>
                 </div>
@@ -183,9 +184,9 @@ function BlogIndexPage() {
                 </p>
               </div>
 
-              <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4 text-[12px] text-ink-tertiary">
-                <span>{formatShortDate(post.publishedAt)}</span>
-                <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
+              <div className="mt-6 flex items-center justify-between gap-2 border-t border-hairline pt-4 text-[11px] sm:text-[12px] text-ink-tertiary">
+                <span className="whitespace-nowrap">{formatShortDate(post.publishedAt)}</span>
+                <span className="neu-btn-blue px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-semibold text-white shadow-xs whitespace-nowrap">
                   Baca artikel &rarr;
                 </span>
               </div>
