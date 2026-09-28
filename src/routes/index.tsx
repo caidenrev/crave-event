@@ -249,82 +249,86 @@ function IndexPage() {
       </section>
 
       {/* Playlist Unggulan Section */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <SectionHeading
-            overline="Kurasi Materi"
-            title="Playlist Event Unggulan"
-            description="Temukan sesi belajar yang sesuai dengan minat dan target perkembangan skill kamu."
-            action={
-              <Link
-                to="/events"
-                className="neu-link-glass text-[13px] font-semibold text-accent"
-              >
-                Lihat semua kategori &rarr;
-              </Link>
-            }
-          />
-
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {playlists.map((pl) => {
-              const count = events.filter(
-                (ev) => isPlaylistMatch(ev.playlist, pl.tag) || isPlaylistMatch(ev.playlist, pl.title),
-              ).length;
-
-              return (
+      {playlists.length > 0 && (
+        <section className="px-4 py-16">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading
+              overline="Kurasi Materi"
+              title="Playlist Event Unggulan"
+              description="Temukan sesi belajar yang sesuai dengan minat dan target perkembangan skill kamu."
+              action={
                 <Link
-                  key={pl.id}
                   to="/events"
-                  search={{ playlist: pl.tag }}
-                  className="glass lift group flex flex-col justify-between rounded-lg p-6"
+                  className="neu-link-glass text-[13px] font-semibold text-accent"
                 >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Badge tone="neutral">{pl.tag}</Badge>
-                      <span className="text-[12px] font-semibold text-ink-tertiary">
-                        {count > 0 ? `${count} Event` : "Segera Hadir"}
+                  Lihat semua kategori &rarr;
+                </Link>
+              }
+            />
+
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {playlists.map((pl) => {
+                const count = events.filter(
+                  (ev) => isPlaylistMatch(ev.playlist, pl.tag) || isPlaylistMatch(ev.playlist, pl.title),
+                ).length;
+
+                return (
+                  <Link
+                    key={pl.id}
+                    to="/events"
+                    search={{ playlist: pl.tag }}
+                    className="glass lift group flex flex-col justify-between rounded-lg p-6"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <Badge tone="neutral">{pl.tag}</Badge>
+                        <span className="text-[12px] font-semibold text-ink-tertiary">
+                          {count > 0 ? `${count} Event` : "Segera Hadir"}
+                        </span>
+                      </div>
+                      <h3 className="mt-4 text-[18px] font-semibold text-ink group-hover:text-accent transition-colors">
+                        {pl.title}
+                      </h3>
+                      <p className="mt-2 text-[13px] leading-normal text-ink-secondary">
+                        {pl.description}
+                      </p>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4">
+                      <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
+                        Lihat Jadwal &rarr;
                       </span>
                     </div>
-                    <h3 className="mt-4 text-[18px] font-semibold text-ink group-hover:text-accent transition-colors">
-                      {pl.title}
-                    </h3>
-                    <p className="mt-2 text-[13px] leading-normal text-ink-secondary">
-                      {pl.description}
-                    </p>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4">
-                    <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
-                      Lihat Jadwal &rarr;
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Event Terdekat Section */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <SectionHeading
-            overline="Jadwal Terdekat"
-            title="Event &amp; Webinar Mendatang"
-            description="Pilih sesi yang kamu butuhkan. Tiket gratis maupun berbayar siap didaftarkan langsung."
-            action={
-              <ButtonLink to="/events" variant="glass" size="sm">
-                Lihat Kalender Lengkap
-              </ButtonLink>
-            }
-          />
+      {upcomingEvents.length > 0 && (
+        <section className="px-4 py-16">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading
+              overline="Jadwal Terdekat"
+              title="Event &amp; Webinar Mendatang"
+              description="Pilih sesi yang kamu butuhkan. Tiket gratis maupun berbayar siap didaftarkan langsung."
+              action={
+                <ButtonLink to="/events" variant="glass" size="sm">
+                  Lihat Kalender Lengkap
+                </ButtonLink>
+              }
+            />
 
-          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {upcomingEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
+            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {upcomingEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Alur & Keunggulan Crave Event */}
       <section className="px-4 py-16">
@@ -437,55 +441,57 @@ function IndexPage() {
       </section>
 
       {/* Blog Terbaru Section */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <SectionHeading
-            overline="Wawasan &amp; Panduan"
-            title="Artikel &amp; Catatan Belajar"
-            description="Tips komunikasi, strategi presentasi, dan alur kerja teknologi dari host."
-            action={
-              <ButtonLink to="/blog" variant="glass" size="sm">
-                Buka Semua Artikel
-              </ButtonLink>
-            }
-          />
+      {recentPosts.length > 0 && (
+        <section className="px-4 py-16">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading
+              overline="Wawasan &amp; Panduan"
+              title="Artikel &amp; Catatan Belajar"
+              description="Tips komunikasi, strategi presentasi, dan alur kerja teknologi dari host."
+              action={
+                <ButtonLink to="/blog" variant="glass" size="sm">
+                  Buka Semua Artikel
+                </ButtonLink>
+              }
+            />
 
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recentPosts.map((post) => (
-              <Link
-                key={post.id}
-                to="/blog/$slug"
-                params={{ slug: post.slug }}
-                className="glass lift group flex flex-col justify-between rounded-lg p-6"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="aether-meta rounded-pill bg-accent-tint px-2.5 py-0.5 text-accent-strong">
-                      {post.tag}
-                    </span>
-                    <span className="flex items-center gap-1 text-[12px] text-ink-tertiary">
-                      <Clock className="size-3" />
-                      {post.readMinutes} mnt baca
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {recentPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  to="/blog/$slug"
+                  params={{ slug: post.slug }}
+                  className="glass lift group flex flex-col justify-between rounded-lg p-6"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="aether-meta rounded-pill bg-accent-tint px-2.5 py-0.5 text-accent-strong">
+                        {post.tag}
+                      </span>
+                      <span className="flex items-center gap-1 text-[12px] text-ink-tertiary">
+                        <Clock className="size-3" />
+                        {post.readMinutes} mnt baca
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-[17px] font-semibold text-ink group-hover:text-accent transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-3 text-[13px] text-ink-secondary">
+                      {post.excerpt}
+                    </p>
+                  </div>
+                  <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4 text-[12px] text-ink-tertiary">
+                    <span>{formatShortDate(post.publishedAt)}</span>
+                    <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
+                      Baca &rarr;
                     </span>
                   </div>
-                  <h3 className="mt-4 text-[17px] font-semibold text-ink group-hover:text-accent transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-3 text-[13px] text-ink-secondary">
-                    {post.excerpt}
-                  </p>
-                </div>
-                <div className="mt-6 flex items-center justify-between border-t border-hairline pt-4 text-[12px] text-ink-tertiary">
-                  <span>{formatShortDate(post.publishedAt)}</span>
-                  <span className="neu-btn-blue px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs">
-                    Baca &rarr;
-                  </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Box */}
       <section className="px-4 py-16">

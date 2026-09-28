@@ -17,7 +17,7 @@ import {
   type Playlist,
 } from "./mock-data";
 import { isSupabaseConfigured } from "./supabase";
-import { eventsApi, registrationsApi, blogsApi } from "./supabase-services";
+import { eventsApi, registrationsApi, blogsApi, playlistsApi } from "./supabase-services";
 
 type AppContextType = {
   events: EventItem[];
@@ -42,9 +42,11 @@ type AppContextType = {
   deleteEvent: (id: string) => void;
   deleteAllEvents: () => void;
   resetAllEvents: () => void;
-  createPlaylist: (data: Omit<Playlist, "id" | "eventCount">) => void;
+  createPlaylist: (data: Omit<Playlist, "id" | "eventCount">) => Promise<Playlist>;
   updatePlaylist: (id: string, updates: Partial<Omit<Playlist, "id">>) => void;
   deletePlaylist: (id: string) => void;
+  deleteAllPlaylists: () => void;
+  resetAllPlaylists: () => void;
   createBlogPost: (data: Omit<BlogPost, "id">) => Promise<BlogPost>;
   updateBlogPost: (id: string, updates: Partial<BlogPost>) => void;
   deleteBlogPost: (id: string) => void;
@@ -64,6 +66,7 @@ export const STORAGE_KEYS = {
   EVENTS: "aether_events_v1",
   EVENTS_CLEARED: "aether_events_cleared_v1",
   PLAYLISTS: "aether_playlists_v1",
+  PLAYLISTS_CLEARED: "aether_playlists_cleared_v1",
   MY_EVENTS: "aether_my_events_v1",
   ATTENDEES: "aether_attendees_v1",
   BLOGS: "aether_blogs_v1",
@@ -87,15 +90,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(saved);
       } catch {}
     }
-    // Jika Supabase terkonfigurasi, default ke empty sampai fetch selesai agar tidak memunculkan data dummy lama
     if (isSupabaseConfigured) return [];
     return initialEvents;
   });
 
   const [playlists, setPlaylists] = useState<Playlist[]>(() => {
     if (typeof window === "undefined") return initialPlaylists;
+    const isCleared = localStorage.getItem(STORAGE_KEYS.PLAYLISTS_CLEARED) === "true";
+    if (isCleared) return [];
     const saved = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
-    return saved ? JSON.parse(saved) : initialPlaylists;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    if (isSupabaseConfigured) return [];
+    return initialPlaylists;
   });
 
   const [currentUser, setCurrentUser] = useState<{
@@ -154,7 +164,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(saved);
       } catch {}
     }
-    // Jika Supabase terkonfigurasi, default ke empty sampai fetch selesai agar tidak memunculkan data dummy lama
     if (isSupabaseConfigured) return [];
     return initialBlogPosts;
   });
@@ -194,6 +203,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
+      if (playlists.length === 0) {
+        localStorage.setItem(STORAGE_KEYS.PLAYLISTS_CLEARED, "true");
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.PLAYLISTS_CLEARED);
+      }
     } catch {}
   }, [playlists]);
 
@@ -225,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [blogPosts]);
 
-  // Initial Sync from Supabase Cloud Database (for Events, Blogs & Registrations)
+  // Initial Sync from Supabase Cloud Database (for Events, Playlists, Blogs & Registrations)
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
@@ -246,7 +260,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // 2. Fetch Blogs from Supabase Cloud
+    // 2. Fetch Playlists from Supabase Cloud
+    playlistsApi.fetchAll().then((remotePlaylists) => {
+      if (isMounted && remotePlaylists !== null) {
+        setPlaylists(remotePlaylists);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(remotePlaylists));
+          if (remotePlaylists.length === 0) {
+            localStorage.setItem(STORAGE_KEYS.PLAYLISTS_CLEARED, "true");
+          } else {
+            localStorage.removeItem(STORAGE_KEYS.PLAYLISTS_CLEARED);
+          }
+        } catch {}
+      }
+    });
+
+    // 3. Fetch Blogs from Supabase Cloud
     blogsApi.fetchAll().then((remoteBlogs) => {
       if (isMounted && remoteBlogs !== null) {
         setBlogPosts(remoteBlogs);
@@ -261,7 +290,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // 3. Fetch User Registrations if logged in
+    // 4. Fetch User Registrations if logged in
     registrationsApi.getMyRegistrations().then((remoteRegs) => {
       if (isMounted && remoteRegs && remoteRegs.length > 0) {
         setMyEvents(remoteRegs);
@@ -511,23 +540,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
-  const createPlaylist = (data: Omit<Playlist, "id" | "eventCount">) => {
-    const newPl: Playlist = {
+  const createPlaylist = async (data: Omit<Playlist, "id" | "eventCount">) => {
+    const tempId = `pl-${Date.now()}`;
+    let newPl: Playlist = {
       ...data,
-      id: `pl-${Date.now()}`,
+      id: tempId,
       eventCount: 0,
     };
     setPlaylists((prev) => [...prev, newPl]);
+
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PLAYLISTS_CLEARED);
+    } catch {}
+
+    if (isSupabaseConfigured) {
+      try {
+        const created = await playlistsApi.create(data);
+        if (created) {
+          newPl = created;
+          setPlaylists((prev) => prev.map((p) => (p.id === tempId ? created : p)));
+        }
+      } catch (err) {
+        console.error("[createPlaylist] Cloud create error:", err);
+      }
+    }
+
+    return newPl;
   };
 
   const updatePlaylist = (id: string, updates: Partial<Omit<Playlist, "id">>) => {
     setPlaylists((prev) =>
       prev.map((pl) => (pl.id === id ? { ...pl, ...updates } : pl)),
     );
+    if (isSupabaseConfigured) {
+      playlistsApi.update(id, updates).catch(console.error);
+    }
   };
 
   const deletePlaylist = (id: string) => {
-    setPlaylists((prev) => prev.filter((pl) => pl.id !== id));
+    setPlaylists((prev) => {
+      const updated = prev.filter((pl) => pl.id !== id);
+      if (updated.length === 0) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.PLAYLISTS_CLEARED, "true");
+        } catch {}
+      }
+      return updated;
+    });
+    if (isSupabaseConfigured) {
+      playlistsApi.delete(id).catch(console.error);
+    }
+  };
+
+  const deleteAllPlaylists = () => {
+    setPlaylists([]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.PLAYLISTS_CLEARED, "true");
+    } catch {}
+    if (isSupabaseConfigured) {
+      playlistsApi.deleteAll().catch(console.error);
+    }
+  };
+
+  const resetAllPlaylists = () => {
+    setPlaylists(initialPlaylists);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(initialPlaylists));
+      localStorage.removeItem(STORAGE_KEYS.PLAYLISTS_CLEARED);
+    } catch {}
   };
 
   const createBlogPost = async (data: Omit<BlogPost, "id">) => {
@@ -611,6 +692,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(initialAttendees));
       localStorage.removeItem(STORAGE_KEYS.EVENTS_CLEARED);
       localStorage.removeItem(STORAGE_KEYS.BLOGS_CLEARED);
+      localStorage.removeItem(STORAGE_KEYS.PLAYLISTS_CLEARED);
       localStorage.removeItem(STORAGE_KEYS.MY_EVENTS);
       if (currentUser?.email) {
         const userKey = getUserRegistrationsKey(currentUser.email);
@@ -668,6 +750,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createPlaylist,
         updatePlaylist,
         deletePlaylist,
+        deleteAllPlaylists,
+        resetAllPlaylists,
         createBlogPost,
         updateBlogPost,
         deleteBlogPost,

@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  Crown,
   ExternalLink,
   Folder,
   ListMusic,
   Pencil,
   Plus,
+  RotateCcw,
+  ShieldAlert,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,13 +24,21 @@ export const Route = createFileRoute("/admin/playlists")({
 });
 
 function AdminPlaylistsPage() {
-  const { playlists, events, createPlaylist, updatePlaylist, deletePlaylist, isSuperAdmin } =
-    useApp();
+  const {
+    playlists,
+    events,
+    createPlaylist,
+    updatePlaylist,
+    deletePlaylist,
+    deleteAllPlaylists,
+    isSuperAdmin,
+  } = useApp();
 
   // Modal States
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
   const [deletingPlaylist, setDeletingPlaylist] = useState<Playlist | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Form Fields
   const [tag, setTag] = useState("");
@@ -94,12 +105,48 @@ function AdminPlaylistsPage() {
         title="Kelola Playlist Event"
         description="Kelompokkan sesi webinar ke dalam playlist topik agar peserta mudah memilih bidang belajar."
         action={
-          <Button onClick={openCreateModal} variant="primary" size="sm">
-            <Plus className="size-4" />
-            Tambah Playlist Baru
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowResetModal(true)}
+                className="neu-btn-glass rounded-xl px-3.5 py-2 text-[13px] font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-2 border border-purple-200/80 bg-purple-50/60 hover:bg-purple-100/60 shadow-xs transition-all"
+              >
+                <Crown className="size-4 text-purple-600" />
+                <span>Reset Data Playlist</span>
+              </button>
+            )}
+            <Button onClick={openCreateModal} variant="primary" size="sm">
+              <Plus className="size-4" />
+              Tambah Playlist Baru
+            </Button>
+          </div>
         }
       />
+
+      {/* Super Admin Status Banner */}
+      {isSuperAdmin && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/50 border border-purple-200/80 text-[13px]">
+          <div className="flex items-center gap-2.5">
+            <div className="size-7 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Crown className="size-4" />
+            </div>
+            <div>
+              <span className="font-bold text-purple-900">Mode Super Admin:</span>{" "}
+              <span className="text-purple-700">
+                Anda dapat menghapus seluruh daftar playlist dari cloud database & production untuk pembersihan data dummy.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="neu-btn-glass text-[12px] font-bold text-purple-700 px-3 py-1.5 rounded-lg border border-purple-300 shadow-xs shrink-0 hover:bg-purple-100"
+          >
+            Bersihkan Cloud Data
+          </button>
+        </div>
+      )}
 
       {/* Playlist Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -295,6 +342,58 @@ function AdminPlaylistsPage() {
                 <Trash2 className="size-3.5" />
                 Hapus Playlist
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Super Admin Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
+          <div className="glass relative w-full max-w-md rounded-2xl bg-white p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-purple-700 pb-3 border-b border-hairline">
+              <span className="p-2.5 rounded-xl bg-purple-100 text-purple-700">
+                <ShieldAlert className="size-6" />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-ink">Super Admin Data Control</h3>
+                <p className="text-[12px] text-ink-secondary">Pembersihan playlist database production.</p>
+              </div>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <p className="text-[13px] text-ink leading-relaxed">
+                Anda login sebagai akun root/admin. Anda dapat menghapus seluruh playlist yang ada di database Cloud Supabase & penyimpanan lokal.
+              </p>
+              <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-[12px] text-purple-900 leading-relaxed">
+                ℹ️ <strong>Kosongkan Total:</strong> Semua playlist akan dihapus dari Supabase. Halaman utama (Homepage) tidak akan menampilkan section playlist kosong.
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-3 border-t border-hairline">
+              <button
+                type="button"
+                onClick={() => {
+                  deleteAllPlaylists();
+                  setShowResetModal(false);
+                  toast.success("Seluruh playlist berhasil dihapus!", {
+                    description: "Semua playlist telah dihapus dari cloud database.",
+                  });
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-all"
+              >
+                <Trash2 className="size-4" />
+                Hapus SEMUA Playlist (Supabase Cloud + Local)
+              </button>
+
+              <Button
+                onClick={() => setShowResetModal(false)}
+                variant="glass"
+                size="sm"
+                className="w-full mt-1"
+              >
+                Batal
+              </Button>
             </div>
           </div>
         </div>

@@ -218,3 +218,102 @@ export const deleteAllBlogsServerFn = createServerFn({ method: "POST" }).handler
     return { success: false, message: err?.message };
   }
 });
+
+// ==========================================
+// PLAYLISTS SERVER FUNCTIONS (Admin Role Bypass)
+// ==========================================
+
+export const fetchAllPlaylistsServerFn = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const adminSb = getAdminSupabase();
+    if (!adminSb) return { success: false, data: null, message: "Supabase not configured" };
+
+    const { data, error } = await adminSb
+      .from("playlists")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("[fetchAllPlaylistsServerFn] Error:", error.message);
+      return { success: false, data: null, message: error.message };
+    }
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("[fetchAllPlaylistsServerFn] Exception:", err);
+    return { success: false, data: null, message: err?.message };
+  }
+});
+
+export const createPlaylistServerFn = createServerFn({ method: "POST" })
+  .validator((payload: any) => payload)
+  .handler(async ({ data: payload }) => {
+    try {
+      const adminSb = getAdminSupabase();
+      if (!adminSb) return { success: false, data: null, message: "Supabase not configured" };
+
+      const { data, error } = await adminSb.from("playlists").insert(payload).select().single();
+      if (error) {
+        console.error("[createPlaylistServerFn] Error:", error.message);
+        return { success: false, data: null, message: error.message };
+      }
+      return { success: true, data };
+    } catch (err: any) {
+      console.error("[createPlaylistServerFn] Exception:", err);
+      return { success: false, data: null, message: err?.message };
+    }
+  });
+
+export const updatePlaylistServerFn = createServerFn({ method: "POST" })
+  .validator((payload: { id: string; updates: any }) => payload)
+  .handler(async ({ data: { id, updates } }) => {
+    try {
+      const adminSb = getAdminSupabase();
+      if (!adminSb) return { success: false, message: "Supabase not configured" };
+
+      const { error } = await adminSb.from("playlists").update(updates).eq("id", id);
+      if (error) {
+        console.error("[updatePlaylistServerFn] Error:", error.message);
+        return { success: false, message: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error("[updatePlaylistServerFn] Exception:", err);
+      return { success: false, message: err?.message };
+    }
+  });
+
+export const deletePlaylistServerFn = createServerFn({ method: "POST" })
+  .validator((id: string) => id)
+  .handler(async ({ data: id }) => {
+    try {
+      const adminSb = getAdminSupabase();
+      if (!adminSb) return { success: false, message: "Service key not configured" };
+
+      const { error } = await adminSb.from("playlists").delete().eq("id", id);
+      if (error) {
+        console.error("[deletePlaylistServerFn] Error:", error.message);
+        return { success: false, message: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error("[deletePlaylistServerFn] Exception:", err);
+      return { success: false, message: err?.message };
+    }
+  });
+
+export const deleteAllPlaylistsServerFn = createServerFn({ method: "POST" }).handler(async () => {
+  try {
+    const adminSb = getAdminSupabase();
+    if (!adminSb) return { success: false, message: "Service key not configured" };
+
+    const { error } = await adminSb.from("playlists").delete().neq("id", "");
+    if (error) {
+      console.error("[deleteAllPlaylistsServerFn] Error:", error.message);
+      return { success: false, message: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("[deleteAllPlaylistsServerFn] Exception:", err);
+    return { success: false, message: err?.message };
+  }
+});

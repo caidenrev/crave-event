@@ -11,6 +11,11 @@ import {
   updateBlogServerFn,
   deleteBlogServerFn,
   deleteAllBlogsServerFn,
+  fetchAllPlaylistsServerFn,
+  createPlaylistServerFn,
+  updatePlaylistServerFn,
+  deletePlaylistServerFn,
+  deleteAllPlaylistsServerFn,
 } from "./server-api";
 
 /**
@@ -87,6 +92,146 @@ export function mapDatabaseBlogToApp(record: any): BlogPost {
     status: record.is_published ? "published" : "draft",
   };
 }
+
+// Helper pemetaan dari record tabel 'playlists' ke interface frontend 'Playlist'
+export function mapDatabasePlaylistToApp(record: any): Playlist {
+  const formattedTag = record.slug
+    ? record.slug.startsWith("#")
+      ? record.slug
+      : `#${record.slug}`
+    : `#${record.title.replace(/\s+/g, "")}`;
+
+  return {
+    id: record.id,
+    tag: formattedTag,
+    title: record.title,
+    description: record.description || "",
+    eventCount: 0,
+  };
+}
+
+export const playlistsApi = {
+  async fetchAll(): Promise<Playlist[] | null> {
+    if (!isSupabaseConfigured) return null;
+
+    try {
+      const serverRes = await fetchAllPlaylistsServerFn();
+      if (serverRes?.success && Array.isArray(serverRes.data)) {
+        return serverRes.data.map(mapDatabasePlaylistToApp);
+      }
+    } catch {
+      // Fallback to client query
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("playlists")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+      if (error || !data) {
+        console.warn("[playlistsApi.fetchAll] Client query error:", error?.message);
+        return null;
+      }
+      return data.map(mapDatabasePlaylistToApp);
+    } catch (err) {
+      console.warn("[playlistsApi.fetchAll] Exception:", err);
+      return null;
+    }
+  },
+
+  async create(playlist: Omit<Playlist, "id" | "eventCount">): Promise<Playlist | null> {
+    if (!isSupabaseConfigured) return null;
+
+    const rawSlug = playlist.tag.replace(/^#/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const payload = {
+      title: playlist.title,
+      description: playlist.description,
+      slug: rawSlug || `pl-${Date.now()}`,
+      sort_order: 1,
+    };
+
+    try {
+      const serverRes = await createPlaylistServerFn({ data: payload });
+      if (serverRes?.success && serverRes.data) {
+        return mapDatabasePlaylistToApp(serverRes.data);
+      }
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { data, error } = await supabase.from("playlists").insert(payload).select().single();
+      if (error || !data) {
+        console.error("[playlistsApi.create] Error:", error?.message);
+        return null;
+      }
+      return mapDatabasePlaylistToApp(data);
+    } catch (err) {
+      console.error("[playlistsApi.create] Exception:", err);
+      return null;
+    }
+  },
+
+  async update(id: string, updates: Partial<Omit<Playlist, "id">>): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    const payload: Record<string, any> = {};
+
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.tag !== undefined) {
+      payload.slug = updates.tag.replace(/^#/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    }
+
+    try {
+      const serverRes = await updatePlaylistServerFn({ data: { id, updates: payload } });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("playlists").update(payload).eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    try {
+      const serverRes = await deletePlaylistServerFn({ data: id });
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("playlists").delete().eq("id", id);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  async deleteAll(): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    try {
+      const serverRes = await deleteAllPlaylistsServerFn();
+      if (serverRes?.success) return true;
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const { error } = await supabase.from("playlists").delete().neq("id", "");
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+};
 
 export const eventsApi = {
   async fetchAll(): Promise<EventItem[] | null> {
