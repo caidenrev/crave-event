@@ -821,7 +821,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return updated;
     });
     if (isSupabaseConfigured) {
-      blogsApi.delete(id).catch(console.error);
+      blogsApi.delete(id).then((success) => {
+        if (!success) {
+          console.error("[deleteBlogPost] Supabase delete FAILED for id:", id, "— check RLS policies on blogs table");
+        }
+      }).catch((err) => {
+        console.error("[deleteBlogPost] Exception:", err);
+      });
     }
   };
 

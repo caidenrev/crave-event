@@ -401,8 +401,13 @@ export const blogsApi = {
     if (!isSupabaseConfigured) return false;
     try {
       const { error } = await supabase.from("blogs").delete().eq("id", id);
-      return !error;
-    } catch {
+      if (error) {
+        console.error("[blogsApi.delete] Supabase error:", error.message, error.details, error.hint);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[blogsApi.delete] Exception:", err);
       return false;
     }
   },
