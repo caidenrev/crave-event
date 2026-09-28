@@ -25,7 +25,7 @@ function AdminEditBlogPage() {
   const [tag, setTag] = useState(post?.tag || playlists[0]?.tag || "#TechTalk");
   const [readMinutes, setReadMinutes] = useState(post?.readMinutes || 4);
   const [excerpt, setExcerpt] = useState(post?.excerpt || "");
-  const [bodyText, setBodyText] = useState(post?.body ? post.body.join("\n\n") : "");
+  const [bodyText, setBodyText] = useState(post?.body ? post.body[0] || post.body.join("\n\n") : "");
   const [cover, setCover] = useState(post?.cover || DEFAULT_PRESET_BANNERS[0]!.value);
   const [status, setStatus] = useState<"published" | "draft">(post?.status || "published");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -37,7 +37,7 @@ function AdminEditBlogPage() {
       setTag(post.tag);
       setReadMinutes(post.readMinutes);
       setExcerpt(post.excerpt);
-      setBodyText(post.body.join("\n\n"));
+      setBodyText(post.body[0] || post.body.join("\n\n"));
       setCover(post.cover || DEFAULT_PRESET_BANNERS[0]!.value);
       setStatus(post.status);
     }
@@ -56,17 +56,12 @@ function AdminEditBlogPage() {
       return;
     }
 
-    const paragraphs = bodyText
-      .split("\n\n")
-      .map((p) => p.trim())
-      .filter(Boolean);
-
     updateBlogPost(post.id, {
       title,
       slug,
       tag,
       excerpt,
-      body: paragraphs.length ? paragraphs : [excerpt],
+      body: [bodyText],
       readMinutes: Number(readMinutes) || 4,
       cover,
       status,

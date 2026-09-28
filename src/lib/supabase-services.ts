@@ -52,11 +52,6 @@ export function mapDatabaseBlogToApp(record: any): BlogPost {
     tag = record.tag;
   }
 
-  const paragraphs = cleanContent
-    .split(/\r?\n\r?\n/)
-    .map((p: string) => p.trim())
-    .filter(Boolean);
-
   const readingTimeNumber = parseInt(record.reading_time || "5", 10) || 5;
 
   return {
@@ -64,7 +59,7 @@ export function mapDatabaseBlogToApp(record: any): BlogPost {
     slug: record.slug,
     title: record.title,
     excerpt: record.excerpt || "",
-    body: paragraphs.length > 0 ? paragraphs : [cleanContent || record.excerpt || ""],
+    body: [cleanContent || record.excerpt || ""],
     tag: tag,
     readMinutes: readingTimeNumber,
     publishedAt: record.published_at
@@ -340,6 +335,7 @@ export const blogsApi = {
   async create(post: Omit<BlogPost, "id">): Promise<BlogPost | null> {
     if (!isSupabaseConfigured) return null;
 
+    // body[0] is the full raw markdown string when coming from new.tsx
     const bodyText = Array.isArray(post.body)
       ? post.body.join("\n\n")
       : (post.body as any) || post.excerpt || "";
@@ -385,8 +381,9 @@ export const blogsApi = {
 
     if (updates.body !== undefined || updates.tag !== undefined) {
       const targetTag = updates.tag || "#TechTalk";
+      // body[0] holds the full raw markdown string
       const bodyText = Array.isArray(updates.body)
-        ? updates.body.join("\n\n")
+        ? (updates.body.length === 1 ? updates.body[0] : updates.body.join("\n\n"))
         : (updates.body as any) || updates.excerpt || "";
       const tagHeader = targetTag ? `<!--tag:${targetTag}-->\n\n` : "";
       payload['content'] = tagHeader + bodyText;

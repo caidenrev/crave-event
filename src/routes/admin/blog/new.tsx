@@ -48,17 +48,12 @@ function AdminNewBlogPage() {
 
     setLoading(true);
     try {
-      const paragraphs = bodyText
-        .split("\n\n")
-        .map((p) => p.trim())
-        .filter(Boolean);
-
       await createBlogPost({
         slug: slug || `post-${Date.now()}`,
         title,
         tag,
         excerpt: excerpt || "Artikel pembelajaran dan materi webinar Crave Event.",
-        body: paragraphs.length ? paragraphs : [excerpt],
+        body: [bodyText],
         readMinutes: Number(readMinutes) || 4,
         cover,
         publishedAt: new Date().toISOString().split("T")[0]!,
