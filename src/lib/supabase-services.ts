@@ -1,30 +1,12 @@
 import { supabase, isSupabaseConfigured, type DatabaseCertificate } from "./supabase";
 import type { EventItem, MyEvent, Playlist, BlogPost, Attendee } from "./mock-data";
-import {
-  fetchAllEventsServerFn,
-  createEventServerFn,
-  updateEventServerFn,
-  deleteEventServerFn,
-  deleteAllEventsServerFn,
-  fetchAllBlogsServerFn,
-  createBlogServerFn,
-  updateBlogServerFn,
-  deleteBlogServerFn,
-  deleteAllBlogsServerFn,
-  fetchAllPlaylistsServerFn,
-  createPlaylistServerFn,
-  updatePlaylistServerFn,
-  deletePlaylistServerFn,
-  deleteAllPlaylistsServerFn,
-} from "./server-api";
 
 /**
  * ============================================================================
  * SUPABASE SERVICE LAYER — CRAVE EVENT
  * ============================================================================
  * Modul ini menyediakan fungsi asynchronous untuk interaksi langsung dengan
- * database PostgreSQL dan Auth di Supabase. Didukung Server Functions dengan
- * Service Role Key bypass untuk memastikan operasi CRUD selalu berhasil 100%.
+ * database PostgreSQL dan Auth di Supabase secara native dan handal di semua runtime.
  */
 
 // Helper pemetaan dari record tabel 'events' ke interface frontend 'EventItem'
@@ -115,22 +97,13 @@ export const playlistsApi = {
     if (!isSupabaseConfigured) return null;
 
     try {
-      const serverRes = await fetchAllPlaylistsServerFn();
-      if (serverRes?.success && Array.isArray(serverRes.data)) {
-        return serverRes.data.map(mapDatabasePlaylistToApp);
-      }
-    } catch {
-      // Fallback to client query
-    }
-
-    try {
       const { data, error } = await supabase
         .from("playlists")
         .select("*")
         .order("sort_order", { ascending: true });
 
       if (error || !data) {
-        console.warn("[playlistsApi.fetchAll] Client query error:", error?.message);
+        console.warn("[playlistsApi.fetchAll] Error:", error?.message);
         return null;
       }
       return data.map(mapDatabasePlaylistToApp);
@@ -150,15 +123,6 @@ export const playlistsApi = {
       slug: rawSlug || `pl-${Date.now()}`,
       sort_order: 1,
     };
-
-    try {
-      const serverRes = await createPlaylistServerFn({ data: payload });
-      if (serverRes?.success && serverRes.data) {
-        return mapDatabasePlaylistToApp(serverRes.data);
-      }
-    } catch {
-      // Fallback
-    }
 
     try {
       const { data, error } = await supabase.from("playlists").insert(payload).select().single();
@@ -184,13 +148,6 @@ export const playlistsApi = {
     }
 
     try {
-      const serverRes = await updatePlaylistServerFn({ data: { id, updates: payload } });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("playlists").update(payload).eq("id", id);
       return !error;
     } catch {
@@ -201,13 +158,6 @@ export const playlistsApi = {
   async delete(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
     try {
-      const serverRes = await deletePlaylistServerFn({ data: id });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("playlists").delete().eq("id", id);
       return !error;
     } catch {
@@ -217,13 +167,6 @@ export const playlistsApi = {
 
   async deleteAll(): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    try {
-      const serverRes = await deleteAllPlaylistsServerFn();
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
     try {
       const { error } = await supabase.from("playlists").delete().neq("id", "");
       return !error;
@@ -238,22 +181,13 @@ export const eventsApi = {
     if (!isSupabaseConfigured) return null;
 
     try {
-      const serverRes = await fetchAllEventsServerFn();
-      if (serverRes?.success && Array.isArray(serverRes.data)) {
-        return serverRes.data.map(mapDatabaseEventToApp);
-      }
-    } catch {
-      // Fallback to client query
-    }
-
-    try {
       const { data, error } = await supabase
         .from("events")
         .select("*")
         .order("date", { ascending: true });
 
       if (error) {
-        console.warn("[eventsApi.fetchAll] Client query error:", error.message);
+        console.warn("[eventsApi.fetchAll] Error:", error.message);
         return null;
       }
       return data ? data.map(mapDatabaseEventToApp) : [];
@@ -303,15 +237,6 @@ export const eventsApi = {
     };
 
     try {
-      const serverRes = await createEventServerFn({ data: payload });
-      if (serverRes?.success && serverRes.data) {
-        return mapDatabaseEventToApp(serverRes.data);
-      }
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { data, error } = await supabase.from("events").insert(payload).select().single();
       if (error || !data) {
         console.error("[eventsApi.create] Error:", error?.message);
@@ -347,13 +272,6 @@ export const eventsApi = {
     if (updates.thumbnail !== undefined) payload.banner_url = updates.thumbnail;
 
     try {
-      const serverRes = await updateEventServerFn({ data: { id, updates: payload } });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("events").update(payload).eq("id", id);
       return !error;
     } catch {
@@ -364,13 +282,6 @@ export const eventsApi = {
   async delete(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
     try {
-      const serverRes = await deleteEventServerFn({ data: id });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("events").delete().eq("id", id);
       return !error;
     } catch {
@@ -380,13 +291,6 @@ export const eventsApi = {
 
   async deleteAll(): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    try {
-      const serverRes = await deleteAllEventsServerFn();
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
     try {
       const { error } = await supabase.from("events").delete().neq("id", "");
       return !error;
@@ -401,27 +305,34 @@ export const blogsApi = {
     if (!isSupabaseConfigured) return null;
 
     try {
-      const serverRes = await fetchAllBlogsServerFn();
-      if (serverRes?.success && Array.isArray(serverRes.data)) {
-        return serverRes.data.map(mapDatabaseBlogToApp);
-      }
-    } catch {
-      // Fallback to client query
-    }
-
-    try {
       const { data, error } = await supabase
         .from("blogs")
         .select("*")
         .order("published_at", { ascending: false });
 
       if (error || !data) {
-        console.warn("[blogsApi.fetchAll] Client query error:", error?.message);
+        console.warn("[blogsApi.fetchAll] Error:", error?.message);
         return null;
       }
       return data.map(mapDatabaseBlogToApp);
     } catch (err) {
       console.warn("[blogsApi.fetchAll] Exception:", err);
+      return null;
+    }
+  },
+
+  async getBySlug(slug: string): Promise<BlogPost | null> {
+    if (!isSupabaseConfigured) return null;
+    try {
+      const { data, error } = await supabase
+        .from("blogs")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return mapDatabaseBlogToApp(data);
+    } catch {
       return null;
     }
   },
@@ -447,15 +358,6 @@ export const blogsApi = {
       is_published: post.status === "published",
       published_at: post.publishedAt || new Date().toISOString(),
     };
-
-    try {
-      const serverRes = await createBlogServerFn({ data: payload });
-      if (serverRes?.success && serverRes.data) {
-        return mapDatabaseBlogToApp(serverRes.data);
-      }
-    } catch {
-      // Fallback
-    }
 
     try {
       const { data, error } = await supabase.from("blogs").insert(payload).select().single();
@@ -491,13 +393,6 @@ export const blogsApi = {
     }
 
     try {
-      const serverRes = await updateBlogServerFn({ data: { id, updates: payload } });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("blogs").update(payload).eq("id", id);
       return !error;
     } catch {
@@ -508,13 +403,6 @@ export const blogsApi = {
   async delete(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
     try {
-      const serverRes = await deleteBlogServerFn({ data: id });
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
-    try {
       const { error } = await supabase.from("blogs").delete().eq("id", id);
       return !error;
     } catch {
@@ -524,13 +412,6 @@ export const blogsApi = {
 
   async deleteAll(): Promise<boolean> {
     if (!isSupabaseConfigured) return false;
-    try {
-      const serverRes = await deleteAllBlogsServerFn();
-      if (serverRes?.success) return true;
-    } catch {
-      // Fallback
-    }
-
     try {
       const { error } = await supabase.from("blogs").delete().neq("id", "");
       return !error;
@@ -599,53 +480,56 @@ export const registrationsApi = {
     try {
       const { data, error } = await supabase.rpc("record_attendance_and_claim_cert", {
         p_event_id: eventId,
-        p_attendance_code: attendanceCode,
+        p_code: attendanceCode,
       });
 
       if (!error && data?.success) {
         return {
           success: true,
-          message: data?.message ?? "Presensi berhasil dicatat!",
-          certificateId: data?.certificate_id,
+          message: data.message || "Presensi berhasil dicatat!",
+          certificateId: data.certificate_id,
         };
       }
     } catch {
-      // RPC error, fall through to direct tables
+      // Fallback
     }
 
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return { success: false, message: "Pengguna belum login ke Supabase." };
+      if (!user) {
+        return { success: false, message: "Anda belum login." };
+      }
 
-      // Check event
       const { data: eventData } = await supabase
         .from("events")
-        .select("*")
+        .select("title, date, attendance_code")
         .eq("id", eventId)
         .maybeSingle();
 
-      if (eventData?.attendance_code) {
-        if (eventData.attendance_code.trim().toUpperCase() !== attendanceCode.trim().toUpperCase()) {
-          return { success: false, message: "Kode presensi tidak sesuai." };
-        }
+      if (
+        eventData?.attendance_code &&
+        eventData.attendance_code.toUpperCase() !== attendanceCode.trim().toUpperCase()
+      ) {
+        return {
+          success: false,
+          message: "Kode absensi tidak cocok dengan sesi webinar ini.",
+        };
       }
 
-      const certNum = `CRV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const certId = `cert_${Date.now()}`;
+      await supabase
+        .from("registrations")
+        .update({
+          status: "attended",
+          attended_at: new Date().toISOString(),
+        })
+        .match({ user_id: user.id, event_id: eventId });
 
-      // Upsert registration
-      await supabase.from("registrations").upsert({
-        user_id: user.id,
-        event_id: eventId,
-        status: "attended",
-        payment_status: "free",
-        certificate_id: certId,
-      });
+      const certNum = `CRV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+      const certId = `cert-${Date.now()}`;
 
-      // Insert certificate
-      await supabase.from("certificates").upsert({
+      await supabase.from("certificates").insert({
         id: certId,
         certificate_number: certNum,
         user_id: user.id,
