@@ -234,12 +234,17 @@ function DesktopNavGlider({
 export function SiteHeader() {
   const { currentUser, logoutUser } = useApp();
   const location = useLocation();
+  const [isMounted, setIsMounted] = useState(false);
   const [isDesktopEventOpen, setIsDesktopEventOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileEventOpen, setIsMobileEventOpen] = useState(false);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
 
-  const isLoggedIn = !!currentUser;
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isLoggedIn = isMounted && !!currentUser;
 
   const isSuper = currentUser?.role?.toLowerCase().includes("super");
   const isSpeaker =

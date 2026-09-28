@@ -136,6 +136,7 @@ const getUserRegistrationsKey = (email?: string | null) => {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<EventItem[]>(() => {
+    if (isSupabaseConfigured) return [];
     if (typeof window === "undefined") return initialEvents;
     const isCleared = localStorage.getItem(STORAGE_KEYS.EVENTS_CLEARED) === "true";
     if (isCleared) return [];
@@ -145,11 +146,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(saved);
       } catch {}
     }
-    if (isSupabaseConfigured) return [];
     return initialEvents;
   });
 
   const [playlists, setPlaylists] = useState<Playlist[]>(() => {
+    if (isSupabaseConfigured) return [];
     if (typeof window === "undefined") return initialPlaylists;
     const isCleared = localStorage.getItem(STORAGE_KEYS.PLAYLISTS_CLEARED) === "true";
     if (isCleared) return [];
@@ -159,7 +160,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(saved);
       } catch {}
     }
-    if (isSupabaseConfigured) return [];
     return initialPlaylists;
   });
 
@@ -210,6 +210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
+    if (isSupabaseConfigured) return [];
     if (typeof window === "undefined") return initialBlogPosts;
     const isCleared = localStorage.getItem(STORAGE_KEYS.BLOGS_CLEARED) === "true";
     if (isCleared) return [];
@@ -219,7 +220,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(saved);
       } catch {}
     }
-    if (isSupabaseConfigured) return [];
     return initialBlogPosts;
   });
 
