@@ -226,7 +226,7 @@ function AdminEditBlogPage() {
             onChange={setBodyText}
             label="Materi & Konten Lengkap Artikel (Editor Hypertext & Markdown)"
             placeholder="Tuliskan materi artikel di sini..."
-            minHeight="350px"
+            minHeight="600px"
           />
         </div>
 

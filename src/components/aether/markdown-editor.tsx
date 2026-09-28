@@ -33,7 +33,7 @@ export function MarkdownEditor({
   value,
   onChange,
   placeholder = "Tulis materi, ringkasan, atau isi artikel di sini...",
-  minHeight = "240px",
+  minHeight = "480px",
   label,
 }: MarkdownEditorProps) {
   const [viewMode, setViewMode] = useState<"write" | "preview" | "split">("write");
@@ -275,7 +275,7 @@ export function MarkdownEditor({
               className={`p-4 overflow-y-auto bg-surface/40 ${
                 viewMode === "split" ? "col-span-1" : "w-full"
               }`}
-              style={{ minHeight, maxHeight: "500px" }}
+              style={{ minHeight }}
             >
               {value.trim() ? (
                 <MarkdownRenderer content={value} />

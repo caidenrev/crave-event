@@ -190,7 +190,7 @@ function AdminNewBlogPage() {
             onChange={setBodyText}
             label="Materi & Konten Lengkap Artikel (Editor Hypertext & Markdown)"
             placeholder="Tuliskan materi pembelajaran, tips praktis, panduan kode, atau rangkuman webinar di sini..."
-            minHeight="350px"
+            minHeight="600px"
           />
         </div>
 
