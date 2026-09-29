@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { PageHeader } from "../../../components/aether/dashboard-shell";
 import { Badge, Button, ButtonLink, FilterTabs, SearchInput } from "../../../components/aether/primitives";
 import { QrMatrix } from "../../../components/aether/qr-code";
+import { GlassButton } from "../../../components/ui/glass";
 import { formatDate, formatPrice, formatTime, type EventItem } from "../../../lib/mock-data";
 import { useApp } from "../../../lib/store";
 import { DeleteConfirmModal } from "../../../components/aether/delete-confirm-modal";
@@ -302,10 +303,24 @@ function AdminEventsPage() {
 
       {/* Host Live Presentation QR Modal */}
       {liveQrEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
-          <div className="glass relative w-full max-w-md rounded-2xl bg-white p-6 sm:p-8 text-center shadow-2xl animate-in zoom-in-95 duration-200">
-            <Badge tone="accent">Host Live Presentation Screen</Badge>
-            <h3 className="mt-2 text-xl font-bold text-ink">{liveQrEvent.title}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Glass modal card */}
+          <div
+            className="relative w-full max-w-md rounded-3xl p-6 sm:p-8 text-center animate-in zoom-in-95 duration-200"
+            style={{
+              background: "rgba(255,255,255,0.95)",
+              backdropFilter: "blur(48px) saturate(180%)",
+              WebkitBackdropFilter: "blur(48px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,1)",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,1), 0 32px 80px rgba(15,23,42,0.22), 0 4px 16px rgba(15,23,42,0.10)",
+            }}
+          >
+            {/* Tag chip */}
+            <span className="inline-flex items-center rounded-full bg-accent-tint px-4 py-1.5 text-[10px] font-semibold tracking-widest uppercase text-accent-strong border border-accent/20">
+              Host Live Presentation Screen
+            </span>
+
+            <h3 className="mt-3 text-xl font-bold text-ink">{liveQrEvent.title}</h3>
             <p className="mt-1 text-[13px] text-ink-secondary">
               Bagikan layar (share screen) ini ke peserta webinar di Zoom untuk absensi &amp; klaim
               sertifikat instan.
@@ -318,8 +333,15 @@ function AdminEventsPage() {
 
               return (
                 <>
-                  <div className="my-6 flex flex-col items-center justify-center gap-2">
-                    <div className="rounded-2xl border-4 border-accent p-2.5 bg-white shadow-xl">
+                  {/* QR box */}
+                  <div className="my-6 flex flex-col items-center gap-2">
+                    <div
+                      className="rounded-2xl p-3 bg-white"
+                      style={{
+                        boxShadow: "0 4px 24px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06)",
+                        border: "1px solid rgba(15,23,42,0.06)",
+                      }}
+                    >
                       <QrMatrix value={qrPayload} size={220} />
                     </div>
                     <span className="text-[11.5px] font-medium text-ink-tertiary">
@@ -327,8 +349,9 @@ function AdminEventsPage() {
                     </span>
                   </div>
 
-                  <div className="rounded-xl bg-accent-tint/60 p-3 text-center border border-accent/20">
-                    <span className="aether-meta block text-accent-strong">Kode Absensi Manual Cadangan</span>
+                  {/* Manual code */}
+                  <div className="rounded-2xl bg-accent-tint/60 px-4 py-3 text-center border border-accent/20">
+                    <span className="block text-[10px] font-semibold tracking-widest uppercase text-accent-strong">Kode Absensi Manual Cadangan</span>
                     <span className="mt-1 block font-mono text-2xl font-bold tracking-widest text-ink select-all">
                       {activeCode}
                     </span>
@@ -340,20 +363,26 @@ function AdminEventsPage() {
               );
             })()}
 
+            {/* Action buttons */}
             <div className="mt-6 flex gap-3">
               <Button
+                variant="primary"
+                size="sm"
+                className="flex-1"
                 onClick={() => {
                   toast.success("Token QR diperbarui!", {
                     description: "Jendela waktu absensi aktif 15 menit ke depan.",
                   });
                 }}
-                variant="primary"
-                size="sm"
-                className="flex-1"
               >
                 Refresh Token QR
               </Button>
-              <Button onClick={() => setLiveQrEvent(null)} variant="glass" size="sm" className="flex-1">
+              <Button
+                variant="glass"
+                size="sm"
+                className="flex-1"
+                onClick={() => setLiveQrEvent(null)}
+              >
                 Tutup Layar
               </Button>
             </div>
