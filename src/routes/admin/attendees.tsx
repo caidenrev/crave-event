@@ -121,13 +121,23 @@ function AdminAttendeesPage() {
 
         {/* Counter Summary */}
         <div className="flex items-center justify-between text-[13px] text-ink-secondary border-b border-hairline pb-3">
-          <span>
-            Menampilkan {filtered.length} peserta ({totalAttended} hadir terverifikasi)
+          <span className="flex items-center gap-2">
+            {/* Live pulse dot */}
+            <span className="relative flex size-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-green-500" />
+            </span>
+            <span>
+              <span className="font-semibold text-ink">{totalAttended}</span>
+              <span className="text-ink-secondary"> / {filtered.length} peserta hadir</span>
+              <span className="ml-2 text-[11px] text-green-600 font-medium">• Live</span>
+            </span>
           </span>
           <span className="text-[12px] text-ink-tertiary">
             Klik status untuk mengubah manual kehadiran / pembayaran
           </span>
         </div>
+
       </div>
 
       {/* Attendees Table */}

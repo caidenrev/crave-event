@@ -366,6 +366,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // 5. Fetch all registrations for admin attendance tracking
+    supabase
+      .from("registrations")
+      .select("id, user_id, event_id, status, payment_status, attended_at, certificate_id, profiles(name, email)")
+      .then(({ data: regs }) => {
+        if (!isMounted || !regs) return;
+        const mapped = regs.map((r: any) => ({
+          id: r.id,
+          name: r.profiles?.name || "Peserta",
+          email: r.profiles?.email || "",
+          eventId: r.event_id,
+          paid: r.payment_status === "paid" || r.payment_status === "free",
+          attended: r.status === "attended",
+          checkInAt: r.attended_at
+            ? new Date(r.attended_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+            : null,
+        }));
+        setAttendees((prev) => {
+          // Merge: prioritize Supabase data, keep local-only entries
+          const supabaseIds = new Set(mapped.map((m: any) => m.id));
+          const localOnly = prev.filter((a) => !supabaseIds.has(a.id) && !a.id.startsWith("at-") === false);
+          return [...mapped, ...localOnly.filter((a) => !mapped.some((m: any) => m.email === a.email && m.eventId === a.eventId))];
+        });
+      });
+
     // 5. Realtime subscriptions — update state on any DB change
     const channel = supabase
       .channel("crave-realtime")
@@ -460,6 +485,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
         (payload) => {
           if (!isMounted) return;
           setBlogPosts((prev) => prev.filter((b) => b.id !== payload.old['id']));
+        },
+      )
+      // --- Registrations Realtime (attendance tracking) ---
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "registrations" },
+        async (payload) => {
+          if (!isMounted) return;
+          const r = payload.new as any;
+          // Fetch profile for this user
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("name, email")
+            .eq("id", r.user_id)
+            .maybeSingle();
+          const newAttendee = {
+            id: r.id,
+            name: profile?.name || "Peserta",
+            email: profile?.email || "",
+            eventId: r.event_id,
+            paid: r.payment_status === "paid" || r.payment_status === "free",
+            attended: r.status === "attended",
+            checkInAt: r.attended_at
+              ? new Date(r.attended_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+              : null,
+          };
+          setAttendees((prev) =>
+            prev.some((a) => a.id === newAttendee.id) ? prev : [newAttendee, ...prev],
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "registrations" },
+        async (payload) => {
+          if (!isMounted) return;
+          const r = payload.new as any;
+          const checkInTime = r.attended_at
+            ? new Date(r.attended_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+            : null;
+          setAttendees((prev) =>
+            prev.map((att) =>
+              att.id === r.id
+                ? {
+                    ...att,
+                    paid: r.payment_status === "paid" || r.payment_status === "free",
+                    attended: r.status === "attended",
+                    checkInAt: checkInTime,
+                  }
+                : att,
+            ),
+          );
+          // Also update events attended count
+          if (r.status === "attended") {
+            setEvents((prev) =>
+              prev.map((e) =>
+                e.id === r.event_id ? { ...e, attended: (e.attended || 0) + 1 } : e,
+              ),
+            );
+          }
         },
       )
       .subscribe();
@@ -614,6 +699,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
 
     if (isSupabaseConfigured && (code || targetEvent.attendanceCode)) {
+      // Fire-and-forget — Realtime subscription will update attendees state automatically
       registrationsApi
         .recordAttendanceWithCode(resolvedEventId, code || targetEvent.attendanceCode || "")
         .catch(console.error);
