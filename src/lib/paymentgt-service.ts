@@ -26,7 +26,7 @@ export type PaymentGTCreateResponse = {
   amount: number;
   unique_amount: number;
   unique_offset: number;
-  status: "PENDING" | "PAID" | "EXPIRED";
+  status: "PENDING" | "PAID" | "EXPIRED" | "pending" | "paid" | "expired" | string;
   qris_string: string;
   qris_image_base64: string;
   expires_at: string;
@@ -38,7 +38,7 @@ export type PaymentGTStatusResponse = {
   payment_id: string;
   order_id: string;
   unique_amount: number;
-  status: "PENDING" | "PAID" | "EXPIRED";
+  status: "PENDING" | "PAID" | "EXPIRED" | "pending" | "paid" | "expired" | string;
   expires_at: string;
   paid_at?: string;
   transaction_id?: string;
