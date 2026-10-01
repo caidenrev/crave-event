@@ -137,7 +137,7 @@ export function PaymentDialog({
 
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await getPaymentGTStatus(paymentId);
+        const res = await getPaymentGTStatus(paymentId, totalAmount);
         const statusUpper = (res.status || "").toUpperCase();
         if (statusUpper === "PAID" || statusUpper === "SETTLED" || statusUpper === "SUCCESS") {
           clearInterval(pollingRef.current!);
@@ -174,7 +174,7 @@ export function PaymentDialog({
 
     setCheckingStatus(true);
     try {
-      const res = await getPaymentGTStatus(qrisData.payment_id);
+      const res = await getPaymentGTStatus(qrisData.payment_id, totalAmount);
       const statusUpper = (res.status || "").toUpperCase();
       if (statusUpper === "PAID" || statusUpper === "SETTLED" || statusUpper === "SUCCESS") {
         if (pollingRef.current) clearInterval(pollingRef.current);

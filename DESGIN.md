@@ -18,17 +18,17 @@ Dokumen ini merangkum bahasa desain dari komponen-komponen yang sudah kamu buat 
 ## 2. Warna
 
 ### 2.1 Warna inti
-| Token | Hex / Value | Pemakaian |
-|---|---|---|
-| `--color-canvas` | `#F5F7FB` | Latar halaman |
-| `--color-surface` | `#FFFFFF` | Kartu solid, modal |
-| `--color-surface-glass` | `rgba(255,255,255,0.55)` | Panel kaca ringan |
+| Token                          | Hex / Value              | Pemakaian                       |
+| --------------------------------| --------------------------| ---------------------------------|
+| `--color-canvas`               | `#F5F7FB`                | Latar halaman                   |
+| `--color-surface`              | `#FFFFFF`                | Kartu solid, modal              |
+| `--color-surface-glass`        | `rgba(255,255,255,0.55)` | Panel kaca ringan               |
 | `--color-surface-glass-strong` | `rgba(255,255,255,0.75)` | Panel kaca utama (button, card) |
-| `--color-ink` | `#1D1D1F` | Teks utama |
-| `--color-ink-secondary` | `#54545A` | Teks sekunder |
-| `--color-ink-tertiary` | `#86868B` | Label, meta, placeholder |
-| `--color-ink-inverse` | `#F5F5F7` | Teks di atas isi biru/gelap |
-| `--color-hairline` | `rgba(15,23,42,0.08)` | Border tipis |
+| `--color-ink`                  | `#1D1D1F`                | Teks utama                      |
+| `--color-ink-secondary`        | `#54545A`                | Teks sekunder                   |
+| `--color-ink-tertiary`         | `#86868B`                | Label, meta, placeholder        |
+| `--color-ink-inverse`          | `#F5F5F7`                | Teks di atas isi biru/gelap     |
+| `--color-hairline`             | `rgba(15,23,42,0.08)`    | Border tipis                    |
 
 ### 2.2 Biru sistem (satu-satunya aksen)
 | Token | Hex | Pemakaian |

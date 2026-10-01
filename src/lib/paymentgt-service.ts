@@ -112,8 +112,10 @@ export async function createPaymentGTInvoice(params: {
  */
 export async function getPaymentGTStatus(
   paymentId: string,
+  amount?: number,
 ): Promise<PaymentGTStatusResponse> {
-  const res = await fetch(`${PAYMENTGT_BASE_URL}/api/payments/${paymentId}`, {
+  const query = amount ? `?amount=${amount}` : "";
+  const res = await fetch(`${PAYMENTGT_BASE_URL}/api/payments/${paymentId}${query}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
