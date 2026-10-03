@@ -10,13 +10,14 @@
 
 export const PAYMENTGT_BASE_URL =
   (typeof import.meta !== "undefined" && import.meta.env?.["VITE_PAYMENTGT_URL"]) ||
-  "http://localhost:8085";
+  "https://crave-payment-services-57oz.vercel.app";
 
 export type PaymentGTHalthResponse = {
   status: string;
   merchant?: string;
   store_id?: string;
   timestamp?: number;
+  runtime?: string;
 };
 
 export type PaymentGTCreateResponse = {
@@ -36,17 +37,18 @@ export type PaymentGTCreateResponse = {
 export type PaymentGTStatusResponse = {
   success: boolean;
   payment_id: string;
-  order_id: string;
+  order_id?: string;
+  amount?: number;
   unique_amount: number;
   status: "PENDING" | "PAID" | "EXPIRED" | "pending" | "paid" | "expired" | string;
-  expires_at: string;
+  expires_at?: string;
   paid_at?: string;
   transaction_id?: string;
   payment_type?: string;
 };
 
 /**
- * Memeriksa apakah daemon server PaymentGT aktif dan terhubung dengan merchant
+ * Memeriksa apakah gateway server PaymentGT aktif dan terhubung dengan merchant
  */
 export async function checkPaymentGTHealth(): Promise<{
   active: boolean;
@@ -55,8 +57,8 @@ export async function checkPaymentGTHealth(): Promise<{
 }> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
-    const res = await fetch(`${PAYMENTGT_BASE_URL}/health`, {
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+    const res = await fetch(`${PAYMENTGT_BASE_URL}/api`, {
       method: "GET",
       signal: controller.signal,
     });
@@ -65,16 +67,17 @@ export async function checkPaymentGTHealth(): Promise<{
     if (res.ok) {
       const data: PaymentGTHalthResponse = await res.json();
       return {
-        active: true,
+        active: data.status === "ok",
         ...(data.merchant !== undefined && { merchant: data.merchant }),
         ...(data.store_id !== undefined && { storeId: data.store_id }),
       };
     }
   } catch {
-    // Daemon offline atau belum dijalankan
+    // Gateway offline atau unreachable
   }
   return { active: false };
 }
+
 
 /**
  * Membuat invoice tagihan QRIS dinamis dengan nominal pas
